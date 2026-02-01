@@ -1,0 +1,89 @@
+import { ScreenId } from "../constants/screens";
+
+export default function MainMenu({ onNavigate }) {
+  return (
+    <div className="screen">
+      <header className="header header-compact">
+        <div className="logo logo-small">🔮</div>
+        <h1>Аркана</h1>
+      </header>
+
+      <main>
+        <p
+          className="subtitle"
+          style={{ marginBottom: "20px" }}
+        >
+          У тебя есть 1 бесплатный вопрос, он обновляется каждые 3 дня — начнём?
+        </p>
+
+        <p className="section-label">Выбери, что хочешь сейчас</p>
+        <div className="menu-grid">
+          <button
+            className="menu-card"
+            onClick={() => onNavigate(ScreenId.FREE_TAROT)}
+          >
+            <span className="menu-icon">✨</span>
+            <div className="menu-text">
+              <span className="menu-title">Бесплатный вопрос таро</span>
+            </div>
+          </button>
+          <button
+            className="menu-card"
+            onClick={() => onNavigate("all-spreads")}
+          >
+            <span className="menu-icon">📋</span>
+            <div className="menu-text">
+              <span className="menu-title">Все расклады</span>
+            </div>
+          </button>
+          <button
+            className="menu-card menu-card-paid"
+            onClick={() => onNavigate("card-3days")}
+          >
+            <span className="menu-icon">🪙</span>
+            <div className="menu-text">
+              <span className="menu-title">Карта дня на 3 дня</span>
+            </div>
+            <span className="menu-price">100 ₽</span>
+          </button>
+          <button
+            className="menu-card"
+            onClick={() => onNavigate("fate-matrix")}
+          >
+            <span className="menu-icon">🌌</span>
+            <div className="menu-text">
+              <span className="menu-title">Матрица судьбы</span>
+              <span className="menu-desc">по дате рождения</span>
+            </div>
+          </button>
+          <button
+            className="menu-card"
+            onClick={() => onNavigate("my-readings")}
+          >
+            <span className="menu-icon">📂</span>
+            <div className="menu-text">
+              <span className="menu-title">Мои расклады / покупки</span>
+            </div>
+          </button>
+        </div>
+
+        <div className="divider"></div>
+
+        <div className="menu-footer">
+          <button
+            className="btn btn-secondary"
+            onClick={() => onNavigate(ScreenId.REVIEWS)}
+          >
+            ⭐ Отзывы клиентов
+          </button>
+          <button
+            className="btn btn-outline"
+            onClick={() => onNavigate(ScreenId.LEAVE_REVIEW)}
+          >
+            ✨ Оставить свой отзыв
+          </button>
+        </div>
+      </main>
+    </div>
+  );
+}
