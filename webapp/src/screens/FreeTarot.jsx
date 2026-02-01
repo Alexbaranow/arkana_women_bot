@@ -1,17 +1,31 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
+
+function getInitData() {
+  if (typeof window === "undefined") return "";
+  return window.Telegram?.WebApp?.initData ?? "";
+}
 
 export default function FreeTarot({ onBack }) {
   const [question, setQuestion] = useState("");
   const [loading, setLoading] = useState(false);
   const [answer, setAnswer] = useState(null);
   const [error, setError] = useState(null);
+  const [initData, setInitData] = useState(getInitData);
 
-  const initData =
-    typeof window !== "undefined" && window.Telegram?.WebApp?.initData
-      ? window.Telegram.WebApp.initData
-      : "";
+  // initData может появиться после инъекции Telegram (не сразу при загрузке)
+  useEffect(() => {
+    setInitData(getInitData());
+    const t = setInterval(() => {
+      const data = getInitData();
+      if (data) {
+        setInitData(data);
+        clearInterval(t);
+      }
+    }, 200);
+    return () => clearInterval(t);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

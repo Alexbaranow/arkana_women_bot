@@ -9,13 +9,21 @@ const getName = (ctx) => {
   );
 };
 
-const WEBAPP_URL = process.env.WEBAPP_URL || "";
+// Читаем при вызове, чтобы dotenv уже успел загрузить .env
+function getWebAppUrl() {
+  return process.env.WEBAPP_URL || "";
+}
 
 // Обычные кнопки (Reply keyboard). Если задан WEBAPP_URL — первая кнопка открывает мини-приложение
 function getMainKeyboard() {
+  const webAppUrl = getWebAppUrl();
+  console.log(
+    "[start] getMainKeyboard WEBAPP_URL:",
+    webAppUrl ? `${webAppUrl.substring(0, 30)}...` : "(пусто)"
+  );
   const keyboard = new Keyboard();
-  if (WEBAPP_URL) {
-    keyboard.webApp("🔮 Открыть приложение", WEBAPP_URL).row();
+  if (webAppUrl) {
+    keyboard.webApp("🔮 Открыть приложение", webAppUrl).row();
   }
   keyboard
     .text("⭐ Отзывы клиентов 👀")
@@ -26,9 +34,14 @@ function getMainKeyboard() {
 
 // Инлайн-кнопки выбора действия. Если задан WEBAPP_URL — первая кнопка открывает мини-приложение
 function getMainInlineKeyboard() {
+  const webAppUrl = getWebAppUrl();
+  console.log(
+    "[start] getMainInlineKeyboard WEBAPP_URL:",
+    webAppUrl ? `${webAppUrl.substring(0, 30)}...` : "(пусто)"
+  );
   const keyboard = new InlineKeyboard();
-  if (WEBAPP_URL) {
-    keyboard.webApp("🔮 Открыть приложение", WEBAPP_URL).row();
+  if (webAppUrl) {
+    keyboard.webApp("🔮 Открыть приложение", webAppUrl).row();
   }
   return keyboard
     .text("Бесплатный вопрос таро ✨", "main:free_tarot")
@@ -43,6 +56,7 @@ function getMainInlineKeyboard() {
 }
 
 export async function handleStart(ctx) {
+  console.log("[start] handleStart, user:", ctx.from?.id);
   if (needsOnboarding(ctx.from.id)) {
     return startOnboarding(ctx);
   }

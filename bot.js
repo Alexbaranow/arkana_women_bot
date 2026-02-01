@@ -67,4 +67,8 @@ bot.catch((err) => {
 });
 
 console.log("🔮 Arkana Bot запускается...");
+console.log(
+  "[bot] WEBAPP_URL при старте:",
+  process.env.WEBAPP_URL ? process.env.WEBAPP_URL : "(не задан)"
+);
 bot.start();
