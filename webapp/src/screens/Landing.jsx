@@ -3,15 +3,18 @@ export default function Landing({ onStart }) {
     <div className="screen">
       <header className="header">
         <div className="logo">🔮</div>
-        <h1>Аркана</h1>
-        <p className="subtitle">Расклады от реального таролога</p>
+        <h1>Женский Аркан</h1>
+        <p className="subtitle">Таро и нумерология — в твоём телефоне</p>
       </header>
 
       <main>
         <div className="card">
-          <p className="subtitle">
-            Реальный таролог (не ИИ!) заглянет в твоё будущее через карты и дату
-            рождения.
+          <p
+            className="subtitle"
+            style={{ marginBottom: 0 }}
+          >
+            Один бесплатный вопрос картам каждые 3 дня. Любовь, деньги,
+            здоровье, предназначение — задай то, что волнует.
           </p>
         </div>
 
@@ -26,9 +29,13 @@ export default function Landing({ onStart }) {
 
         <p
           className="subtitle"
-          style={{ textAlign: "center", fontSize: "13px" }}
+          style={{
+            textAlign: "center",
+            fontSize: "13px",
+            color: "var(--color-text-muted)",
+          }}
         >
-          Помогу с любовью ❤️, деньгами 💰, здоровьем 💚, предназначением 🌙
+          Расклады от реального таролога · Без ИИ
         </p>
       </main>
     </div>

@@ -16,6 +16,9 @@ export default function FreeTarot({ onBack }) {
 
   // initData может появиться после инъекции Telegram (не сразу при загрузке)
   useEffect(() => {
+    if (window.Telegram?.WebApp?.ready) {
+      window.Telegram.WebApp.ready();
+    }
     setInitData(getInitData());
     const t = setInterval(() => {
       const data = getInitData();
@@ -23,8 +26,12 @@ export default function FreeTarot({ onBack }) {
         setInitData(data);
         clearInterval(t);
       }
-    }, 200);
-    return () => clearInterval(t);
+    }, 150);
+    const stop = setTimeout(() => clearInterval(t), 4000);
+    return () => {
+      clearInterval(t);
+      clearTimeout(stop);
+    };
   }, []);
 
   const handleSubmit = async (e) => {
@@ -34,8 +41,12 @@ export default function FreeTarot({ onBack }) {
       setError("Опиши вопрос чуть подробнее, хотя бы в несколько слов");
       return;
     }
-    if (!initData) {
-      setError("Открой приложение из Telegram, чтобы задать вопрос");
+    // Читаем initData в момент нажатия — к этому времени Telegram мог уже подставить данные
+    const currentInitData = getInitData();
+    if (!currentInitData) {
+      setError(
+        "Открой приложение из Telegram (кнопка «🔮 Открыть приложение» в боте). Если уже открыл из Telegram — подожди 2–3 секунды и нажми «Отправить» снова."
+      );
       return;
     }
 
@@ -47,7 +58,7 @@ export default function FreeTarot({ onBack }) {
       const res = await fetch(`${API_URL}/api/free-question`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ initData, question: text }),
+        body: JSON.stringify({ initData: currentInitData, question: text }),
       });
       const data = await res.json().catch(() => ({}));
 
@@ -126,14 +137,14 @@ export default function FreeTarot({ onBack }) {
               className="subtitle"
               style={{ marginBottom: "16px" }}
             >
-              Один бесплатный вопрос к нейросети. Напиши, что хочешь узнать ✨
+              Один бесплатный вопрос картам. Напиши, что хочешь узнать ✨
             </p>
             <label className="review-label">
               <textarea
                 className="review-textarea"
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
-                placeholder="Например: что меня ждёт на этой неделе?"
+                placeholder="Например: что меня ждёт в отношениях? Или: как действовать с деньгами?"
                 rows={4}
                 disabled={loading}
               />

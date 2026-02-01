@@ -5,28 +5,29 @@ export default function MainMenu({ onNavigate }) {
     <div className="screen">
       <header className="header header-compact">
         <div className="logo logo-small">🔮</div>
-        <h1>Аркана</h1>
+        <h1>Женский Аркан</h1>
       </header>
 
       <main>
-        <p
-          className="subtitle"
-          style={{ marginBottom: "20px" }}
+        <p className="section-label">Бесплатный вопрос</p>
+        <button
+          className="menu-card menu-card-featured"
+          onClick={() => onNavigate(ScreenId.FREE_TAROT)}
         >
-          У тебя есть 1 бесплатный вопрос, он обновляется каждые 3 дня — начнём?
-        </p>
+          <span className="menu-icon">✨</span>
+          <div className="menu-text">
+            <span className="menu-title">Задать вопрос картам</span>
+            <span className="menu-desc">Обновляется раз в 3 дня</span>
+          </div>
+        </button>
 
-        <p className="section-label">Выбери, что хочешь сейчас</p>
+        <p
+          className="section-label"
+          style={{ marginTop: "20px" }}
+        >
+          Расклады и услуги
+        </p>
         <div className="menu-grid">
-          <button
-            className="menu-card"
-            onClick={() => onNavigate(ScreenId.FREE_TAROT)}
-          >
-            <span className="menu-icon">✨</span>
-            <div className="menu-text">
-              <span className="menu-title">Бесплатный вопрос таро</span>
-            </div>
-          </button>
           <button
             className="menu-card"
             onClick={() => onNavigate("all-spreads")}
@@ -62,7 +63,7 @@ export default function MainMenu({ onNavigate }) {
           >
             <span className="menu-icon">📂</span>
             <div className="menu-text">
-              <span className="menu-title">Мои расклады / покупки</span>
+              <span className="menu-title">Мои расклады</span>
             </div>
           </button>
         </div>
@@ -74,13 +75,13 @@ export default function MainMenu({ onNavigate }) {
             className="btn btn-secondary"
             onClick={() => onNavigate(ScreenId.REVIEWS)}
           >
-            ⭐ Отзывы клиентов
+            ⭐ Отзывы
           </button>
           <button
             className="btn btn-outline"
             onClick={() => onNavigate(ScreenId.LEAVE_REVIEW)}
           >
-            ✨ Оставить свой отзыв
+            ✨ Оставить отзыв
           </button>
         </div>
       </main>

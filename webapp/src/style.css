@@ -213,6 +213,16 @@ h1 {
   );
 }
 
+.menu-card-featured {
+  border-color: var(--color-primary-soft);
+  background: linear-gradient(
+    135deg,
+    rgba(139, 122, 184, 0.12) 0%,
+    rgba(232, 180, 200, 0.08) 100%
+  );
+  margin-bottom: 4px;
+}
+
 .menu-footer {
   display: flex;
   flex-direction: column;

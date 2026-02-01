@@ -1,94 +1,110 @@
-import { Keyboard, InlineKeyboard } from "grammy";
-import { hasFreeQuestion, getUser, needsOnboarding } from "../db.js";
+import { InlineKeyboard } from "grammy";
+import { needsOnboarding } from "../db.js";
 import { startOnboarding } from "./onboarding.js";
 
-const getName = (ctx) => {
-  const user = getUser(ctx.from?.id);
-  return (
-    user?.display_name || ctx.from?.first_name || ctx.from?.username || "друг"
-  );
-};
-
-// Читаем при вызове, чтобы dotenv уже успел загрузить .env
 function getWebAppUrl() {
   return process.env.WEBAPP_URL || "";
 }
 
-// Обычные кнопки (Reply keyboard). Если задан WEBAPP_URL — первая кнопка открывает мини-приложение
-function getMainKeyboard() {
-  const webAppUrl = getWebAppUrl();
-  console.log(
-    "[start] getMainKeyboard WEBAPP_URL:",
-    webAppUrl ? `${webAppUrl.substring(0, 30)}...` : "(пусто)"
-  );
-  const keyboard = new Keyboard();
-  if (webAppUrl) {
-    keyboard.webApp("🔮 Открыть приложение", webAppUrl).row();
-  }
-  keyboard
-    .text("⭐ Отзывы клиентов 👀")
-    .text("✨ Оставить свой отзыв 🌟")
-    .resized();
-  return keyboard;
+const GREETING_TEXT = `Помогу с любовью ❤️, деньгами 💰, здоровьем 💚, предназначением 🌙
+У тебя есть 1 бесплатный вопрос, он обновляется каждые 3 дня — начнём?
+`;
+
+/** URL приложения, опционально с экраном в hash (например #freeTarot, #all-spreads) */
+function getWebAppUrlWithScreen(screen) {
+  const base = getWebAppUrl();
+  if (!base) return "";
+  return screen ? `${base}#${screen}` : base;
 }
 
-// Инлайн-кнопки выбора действия. Если задан WEBAPP_URL — первая кнопка открывает мини-приложение
-function getMainInlineKeyboard() {
-  const webAppUrl = getWebAppUrl();
-  console.log(
-    "[start] getMainInlineKeyboard WEBAPP_URL:",
-    webAppUrl ? `${webAppUrl.substring(0, 30)}...` : "(пусто)"
-  );
-  const keyboard = new InlineKeyboard();
-  if (webAppUrl) {
-    keyboard.webApp("🔮 Открыть приложение", webAppUrl).row();
-  }
-  return keyboard
-    .text("Бесплатный вопрос таро ✨", "main:free_tarot")
-    .row()
-    .text("Все расклады 📋", "main:all_spreads")
-    .row()
-    .text("Карта дня на 3 дня (100 ₽) 🪙", "main:card_3days")
-    .row()
-    .text("Матрица судьбы по дате рождения 🌌", "main:fate_matrix")
-    .row()
-    .text("Мои расклады / покупки 📂", "main:my_readings");
+/** Инлайн-кнопка открытия приложения (initData передаётся только при открытии через неё) */
+function getOpenAppInlineKeyboard() {
+  const url = getWebAppUrlWithScreen();
+  if (!url) return undefined;
+  return new InlineKeyboard().webApp("🔮 Открыть приложение", url);
 }
 
+/** Инлайн-кнопка «Открыть» для перехода в приложение на нужный экран */
+function getAppInlineKeyboardForScreen(screen) {
+  const url = getWebAppUrlWithScreen(screen);
+  if (!url) return undefined;
+  return new InlineKeyboard().webApp("Открыть приложение", url);
+}
+
+/** Главное меню — все пункты инлайн (Web App + callback «Мой статус») */
+function getMainMenuInlineKeyboard() {
+  const base = getWebAppUrl();
+  const kb = new InlineKeyboard();
+  if (base) {
+    kb.webApp("🔮 Открыть приложение", base)
+      .row()
+      .webApp("Бесплатный вопрос таро ✨", `${base}#freeTarot`)
+      .row()
+      .webApp("Все расклады 📋", `${base}#all-spreads`)
+      .row()
+      .webApp("Карта дня на 3 дня (100 ₽) 🪙", `${base}#card-3days`)
+      .row()
+      .webApp("Матрица судьбы/натальная карта 🌌", `${base}#fate-matrix`)
+      .row()
+      .webApp("Мои расклады 📂", `${base}#my-readings`)
+      .row();
+  }
+  kb.text("Мой статус:", "main:status");
+  return kb;
+}
+
+/** Показать приветствие и главное меню (инлайн-кнопки) */
+async function sendMainMenu(ctx) {
+  await ctx.reply(GREETING_TEXT, {
+    reply_markup: getMainMenuInlineKeyboard(),
+  });
+}
+
+/** /start — сразу приветствие и меню (без экрана «Что умеет» и кнопки «Старт») */
 export async function handleStart(ctx) {
-  console.log("[start] handleStart, user:", ctx.from?.id);
+  if (!ctx.from) return;
+  console.log("[start] /start от", ctx.from.id);
+  await sendMainMenu(ctx);
+}
+
+/** Нажатие кнопки «Старт» (для обратной совместимости) — онбординг или главное меню */
+export async function handleStartButton(ctx) {
   if (needsOnboarding(ctx.from.id)) {
     return startOnboarding(ctx);
   }
+  await sendMainMenu(ctx);
+}
 
-  const userName = getName(ctx);
-  const freeAvailable = hasFreeQuestion(ctx.from.id);
+const WELCOME = () => GREETING_TEXT;
 
-  const text = `Привет, ${userName}! 🔮
+const HELP_TEXT = `*Помощь* ❓
 
-Я твой личный помощник по Таро и нумерологии ✨
+Всё самое важное — в приложении. Нажми кнопку ниже, чтобы открыть его.
 
-Реальный таролог (не ИИ!) заглянет в твоё будущее через карты и дату рождения.
+Там ты сможешь:
+• Задать бесплатный вопрос картам (раз в 3 дня)
+• Посмотреть расклады и цены
+• Почитать отзывы и оставить свой
 
-Заглянем в будущее через карты и твою дату рождения?
+Если что-то не работает — напиши сюда, отвечу. 💜`;
 
-Помогу с любовью ❤️, деньгами 💰, здоровьем 💚, предназначением 🌙
-
-У тебя ${
-    freeAvailable
-      ? "есть 1 бесплатный вопрос"
-      : "бесплатный вопрос скоро обновится"
-  }, он обновляется каждые 3 дня — начнём?
-
-Выбери, что хочешь сейчас:`;
-
-  await ctx.reply(text, {
-    reply_markup: getMainKeyboard(),
-  });
-
-  await ctx.reply("Выбери, что хочешь сейчас:", {
-    reply_markup: getMainInlineKeyboard(),
+export async function handleHelp(ctx) {
+  const keyboard = getOpenAppInlineKeyboard();
+  await ctx.reply(HELP_TEXT, {
+    parse_mode: "Markdown",
+    ...(keyboard && { reply_markup: keyboard }),
   });
 }
 
-export { getMainKeyboard, getMainInlineKeyboard };
+/** Любое сообщение (не команда) — показать главное меню */
+export async function handlePromptToStart(ctx) {
+  await sendMainMenu(ctx);
+}
+
+export {
+  getOpenAppInlineKeyboard,
+  getAppInlineKeyboardForScreen,
+  getMainMenuInlineKeyboard,
+  sendMainMenu,
+  WELCOME,
+};
