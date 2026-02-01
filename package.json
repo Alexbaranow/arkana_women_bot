@@ -8,6 +8,7 @@
     "start": "node bot.js",
     "dev": "node --watch bot.js",
     "webapp": "cd webapp && npm run dev",
+    "serve:webapp": "node server-webapp.js",
     "lint": "eslint ."
   },
   "keywords": [
