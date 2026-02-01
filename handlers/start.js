@@ -10,11 +10,13 @@ const GREETING_TEXT = `Помогу с любовью ❤️, деньгами �
 У тебя есть 1 бесплатный вопрос, он обновляется каждые 3 дня — начнём?
 `;
 
-/** URL приложения, опционально с экраном в hash (например #freeTarot, #all-spreads) */
+/** URL приложения, опционально с экраном. Только query — hash перезаписывается Telegram своими launch params. */
 function getWebAppUrlWithScreen(screen) {
   const base = getWebAppUrl();
   if (!base) return "";
-  return screen ? `${base}#${screen}` : base;
+  if (!screen) return base;
+  const sep = base.includes("?") ? "&" : "?";
+  return `${base}${sep}screen=${encodeURIComponent(screen)}`;
 }
 
 /** Инлайн-кнопка открытия приложения (initData передаётся только при открытии через неё) */
@@ -38,15 +40,21 @@ function getMainMenuInlineKeyboard() {
   if (base) {
     kb.webApp("🔮 Открыть приложение", base)
       .row()
-      .webApp("Бесплатный вопрос таро ✨", `${base}#freeTarot`)
+      .webApp("Бесплатный вопрос таро ✨", getWebAppUrlWithScreen("freeTarot"))
       .row()
-      .webApp("Все расклады 📋", `${base}#all-spreads`)
+      .webApp("Все расклады 📋", getWebAppUrlWithScreen("all-spreads"))
       .row()
-      .webApp("Карта дня на 3 дня (100 ₽) 🪙", `${base}#card-3days`)
+      .webApp(
+        "Карта дня на 3 дня (100 ₽) 🪙",
+        getWebAppUrlWithScreen("card-3days")
+      )
       .row()
-      .webApp("Матрица судьбы/натальная карта 🌌", `${base}#fate-matrix`)
+      .webApp(
+        "Матрица судьбы/натальная карта 🌌",
+        getWebAppUrlWithScreen("fate-matrix")
+      )
       .row()
-      .webApp("Мои расклады 📂", `${base}#my-readings`)
+      .webApp("Мои расклады 📂", getWebAppUrlWithScreen("my-readings"))
       .row();
   }
   kb.text("Мой статус:", "main:status");

@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   ScreenId,
   StubTitles,
@@ -6,25 +6,38 @@ import {
   FALLBACK_SCREEN,
 } from "../constants/screens";
 
-
-
-// ДОДЕЛАТЬ
-function getHash() {
+/** Экран из URL: ?screen= или ?screen%3D (Telegram иногда кодирует =). */
+function getScreenFromUrl() {
   if (typeof window === "undefined") return "";
-  return window.location.hash.replace(/^#/, "");
+  const url = new URL(window.location.href);
+  let q = url.searchParams.get("screen");
+  if (q) return q;
+  // Fallback: ?screen%3DfreeTarot — Telegram/клиент может закодировать =
+  const search = url.search.replace(/^\?/, "");
+  if (search) {
+    for (const part of search.split("&")) {
+      const decoded = decodeURIComponent(part.replace(/\+/g, " "));
+      const eq = decoded.indexOf("=");
+      if (eq > 0 && decoded.slice(0, eq) === "screen") {
+        const val = decoded.slice(eq + 1).trim();
+        if (val) return val;
+      }
+    }
+  }
+  const hashParams = new URLSearchParams(url.hash.replace(/^#/, ""));
+  const startParam =
+    hashParams.get("tgWebAppStartParam") ||
+    window.Telegram?.WebApp?.initDataUnsafe?.start_param;
+  return startParam || "";
 }
 
-/** Начальный экран из hash (бот открывает приложение с #freeTarot, #all-spreads и т.д.) */
-function getInitialScreen() {
-  const hash = getHash();
-  if (hash && Object.values(ScreenId).includes(hash)) return hash;
-  if (hash && StubTitles[hash]) return ScreenId.STUB;
-  return DEFAULT_SCREEN;
-}
-
-function getInitialStubTitle() {
-  const hash = getHash();
-  return (hash && StubTitles[hash]) || "";
+function resolveScreenFromUrl() {
+  const screen = getScreenFromUrl();
+  if (screen && Object.values(ScreenId).includes(screen))
+    return { screen, stubTitle: "" };
+  if (screen && StubTitles[screen])
+    return { screen: ScreenId.STUB, stubTitle: StubTitles[screen] };
+  return { screen: DEFAULT_SCREEN, stubTitle: "" };
 }
 
 /**
@@ -32,8 +45,21 @@ function getInitialStubTitle() {
  * @returns {{ currentScreen: string, goTo: function, goBack: function, stubTitle: string }}
  */
 export function useNavigation() {
-  const [currentScreen, setCurrentScreen] = useState(getInitialScreen);
-  const [stubTitle, setStubTitle] = useState(getInitialStubTitle);
+  const [currentScreen, setCurrentScreen] = useState(
+    () => resolveScreenFromUrl().screen
+  );
+  const [stubTitle, setStubTitle] = useState(
+    () => resolveScreenFromUrl().stubTitle
+  );
+
+  // Перепроверяем URL при монтировании (Telegram/браузер могут подставить params позже)
+  useEffect(() => {
+    const { screen, stubTitle: st } = resolveScreenFromUrl();
+    if (screen && screen !== DEFAULT_SCREEN) {
+      setCurrentScreen(screen);
+      if (st && screen === ScreenId.STUB) setStubTitle(st);
+    }
+  }, []);
 
   const goTo = useCallback((target) => {
     if (Object.values(ScreenId).includes(target)) {

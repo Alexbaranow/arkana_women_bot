@@ -24,5 +24,6 @@ export const StubTitles = Object.freeze({
 export const I_RECOMMEND_URL =
   import.meta.env.VITE_I_RECOMMEND_URL || "https://irecommend.ru";
 
+/** При открытии без params («Открыть приложение», Menu Button) — приветствие. */
 export const DEFAULT_SCREEN = ScreenId.LANDING;
 export const FALLBACK_SCREEN = ScreenId.MAIN;
