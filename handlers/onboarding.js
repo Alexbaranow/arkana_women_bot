@@ -4,7 +4,7 @@ import {
   getUser,
   needsOnboarding,
 } from "../db.js";
-import { mainKeyboard, getMainInlineKeyboard } from "./start.js";
+import { getMainKeyboard, getMainInlineKeyboard } from "./start.js";
 
 /** Валидация даты ДД.ММ.ГГГГ */
 function isValidBirthDate(str) {
@@ -109,7 +109,7 @@ async function handleAskBirthDate(ctx, text) {
 Выбери, что хочешь сейчас:`;
 
   await ctx.reply(welcomeText, {
-    reply_markup: mainKeyboard,
+    reply_markup: getMainKeyboard(),
   });
 
   await ctx.reply("Выбери, что хочешь сейчас:", {

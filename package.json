@@ -20,10 +20,12 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "grammy": "^1.21.1",
-    "openai": "^4.28.0",
+    "@tma.js/init-data-node": "^1.4.0",
     "better-sqlite3": "^9.4.3",
-    "dotenv": "^16.4.1"
+    "dotenv": "^16.4.1",
+    "express": "^4.22.1",
+    "grammy": "^1.21.1",
+    "openai": "^4.28.0"
   },
   "devDependencies": {
     "eslint": "^9.0.0"

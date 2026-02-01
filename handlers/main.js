@@ -29,6 +29,8 @@ export async function handleMainCallback(ctx) {
   }
 }
 
+const FREE_QUESTION_STEP = "free_question_waiting";
+
 async function handleFreeTarot(ctx) {
   const freeAvailable = hasFreeQuestion(ctx.from.id);
 
@@ -39,7 +41,10 @@ async function handleFreeTarot(ctx) {
     return;
   }
 
-  await ctx.reply("✨ Бесплатный вопрос таро — в следующем шаге.");
+  ctx.session.step = FREE_QUESTION_STEP;
+  await ctx.reply(
+    "✨ Один бесплатный вопрос к нейросети. Напиши свой вопрос одним сообщением 👇"
+  );
 }
 
 async function handleAllSpreads(ctx) {

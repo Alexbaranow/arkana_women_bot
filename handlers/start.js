@@ -9,15 +9,28 @@ const getName = (ctx) => {
   );
 };
 
-// Обычные кнопки (Reply keyboard)
-const mainKeyboard = new Keyboard()
-  .text("⭐ Отзывы клиентов 👀")
-  .text("✨ Оставить свой отзыв 🌟")
-  .resized();
+const WEBAPP_URL = process.env.WEBAPP_URL || "";
 
-// Инлайн-кнопки выбора действия
+// Обычные кнопки (Reply keyboard). Если задан WEBAPP_URL — первая кнопка открывает мини-приложение
+function getMainKeyboard() {
+  const keyboard = new Keyboard();
+  if (WEBAPP_URL) {
+    keyboard.webApp("🔮 Открыть приложение", WEBAPP_URL).row();
+  }
+  keyboard
+    .text("⭐ Отзывы клиентов 👀")
+    .text("✨ Оставить свой отзыв 🌟")
+    .resized();
+  return keyboard;
+}
+
+// Инлайн-кнопки выбора действия. Если задан WEBAPP_URL — первая кнопка открывает мини-приложение
 function getMainInlineKeyboard() {
-  return new InlineKeyboard()
+  const keyboard = new InlineKeyboard();
+  if (WEBAPP_URL) {
+    keyboard.webApp("🔮 Открыть приложение", WEBAPP_URL).row();
+  }
+  return keyboard
     .text("Бесплатный вопрос таро ✨", "main:free_tarot")
     .row()
     .text("Все расклады 📋", "main:all_spreads")
@@ -56,7 +69,7 @@ export async function handleStart(ctx) {
 Выбери, что хочешь сейчас:`;
 
   await ctx.reply(text, {
-    reply_markup: mainKeyboard,
+    reply_markup: getMainKeyboard(),
   });
 
   await ctx.reply("Выбери, что хочешь сейчас:", {
@@ -64,4 +77,4 @@ export async function handleStart(ctx) {
   });
 }
 
-export { mainKeyboard, getMainInlineKeyboard };
+export { getMainKeyboard, getMainInlineKeyboard };
