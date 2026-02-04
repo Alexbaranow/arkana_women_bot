@@ -5,6 +5,12 @@ import App from "./App";
 import "aos/dist/aos.css";
 import "./style.css";
 
+// Фиксируем границы окна Telegram Mini App с самого старта — иначе при переходах/отправке экран «приближается»
+if (typeof window !== "undefined" && window.Telegram?.WebApp) {
+  window.Telegram.WebApp.ready();
+  window.Telegram.WebApp.expand();
+}
+
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <NatalChartProvider>
