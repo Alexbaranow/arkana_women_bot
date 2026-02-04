@@ -27,6 +27,16 @@
   padding: 0;
 }
 
+html,
+body {
+  overflow-x: hidden;
+}
+
+#root {
+  max-width: 100%;
+  min-width: 0;
+}
+
 body {
   font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
   background: linear-gradient(
@@ -343,7 +353,6 @@ h1 {
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-soft);
   overflow: hidden;
-  transition: box-shadow 0.2s;
 }
 
 .spread-card-paid {
@@ -469,13 +478,14 @@ h1 {
   gap: 8px;
 }
 
+/* 16px предотвращает автозум на iOS при фокусе и стабилизирует viewport */
 .review-textarea {
   width: 100%;
   padding: 12px 16px;
   border: 1px solid var(--color-primary-soft);
   border-radius: var(--radius-sm);
   font-family: inherit;
-  font-size: 15px;
+  font-size: 16px;
   resize: vertical;
   min-height: 100px;
 }
@@ -508,6 +518,24 @@ h1 {
 .onboarding-input {
   min-height: 48px;
   resize: none;
+}
+
+/* Фикс переполнения инпутов (особенно date) на мобильных */
+.review-label {
+  min-width: 0;
+}
+
+input[type="date"].onboarding-input,
+input[type="date"].review-textarea,
+.review-textarea.onboarding-input {
+  max-width: 100%;
+  min-width: 0;
+  width: 100%;
+}
+
+/* font-size 16px предотвращает автозум iOS при фокусе на инпут */
+input[type="date"] {
+  font-size: 16px;
 }
 
 /* Глобальный индикатор расчёта асцендента/натальной карты (заполняемая полоса) */

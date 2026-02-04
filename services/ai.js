@@ -45,22 +45,32 @@ export async function getAnswer(userQuestion) {
   return content.trim();
 }
 
-const NATAL_SYSTEM_PROMPT = `Ты — астролог и специалист по Таро. По дате и месту рождения рассчитай символический асцендент и кратко опиши натальную карту в контексте Таро (арканы, энергии). Ответь структурированно, по-русски, в формате JSON с полями: "ascendant" (знак асцендента и краткое описание), "natalChart" (2–3 абзаца текста о натальной карте и связи с арканами). Без лишнего вступления, только валидный JSON.`;
+const ASCENDANT_PROMPT = `Ты — астролог и специалист по Таро. По дате и месту рождения рассчитай символический асцендент. Ответь ТОЛЬКО валидным JSON с полями: "sign" (знак асцендента, например "Стрелец"), "description" (2–4 предложения о значении асцендента в контексте Таро, связь с арканами). Без вступления, только JSON.`;
+
+const NATAL_CHART_PROMPT = `Ты — астролог и специалист по Таро. По дате и месту рождения опиши натальную карту: 2–3 абзаца текста о ключевых арканах, энергиях и темах жизни. По-русски, тёплым тоном. Только текст, без JSON и вступлений.`;
+
+function extractTextFromChoice(choice) {
+  const msg = choice?.message;
+  if (!msg) return "";
+  const c = msg.content;
+  if (typeof c === "string") return c.trim();
+  if (Array.isArray(c)) {
+    const text = c.find((p) => p?.type === "text")?.text;
+    return typeof text === "string" ? text.trim() : "";
+  }
+  return "";
+}
 
 /**
- * Запрашивает у нейросети расчёт асцендента и натальной карты по дате и месту рождения.
- * @param {string} dateOfBirth - дата рождения (YYYY-MM-DD)
- * @param {string} placeOfBirth - место рождения (город или страна)
- * @returns {Promise<{ ascendant: string, natalChart: string }>}
+ * Парсит ответ нейросети в объект ascendant { sign, description }
  */
-export async function getAscendantAndNatalChart(dateOfBirth, placeOfBirth) {
+export async function fetchAscendant(dateOfBirth, placeOfBirth, retry = false) {
   const openai = getOpenAI();
   const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
-
   const completion = await openai.chat.completions.create({
     model,
     messages: [
-      { role: "system", content: NATAL_SYSTEM_PROMPT },
+      { role: "system", content: ASCENDANT_PROMPT },
       {
         role: "user",
         content: `Дата рождения: ${dateOfBirth}. Место рождения: ${placeOfBirth}.`,
@@ -68,47 +78,100 @@ export async function getAscendantAndNatalChart(dateOfBirth, placeOfBirth) {
     ],
     max_tokens: 800,
   });
-
-  const content = completion.choices[0]?.message?.content;
+  const choice = completion.choices[0];
+  let content = extractTextFromChoice(choice);
+  if (!content && !retry) {
+    await new Promise((r) => setTimeout(r, 1000));
+    return fetchAscendant(dateOfBirth, placeOfBirth, true);
+  }
   if (!content) {
-    throw new Error("Пустой ответ от нейросети");
+    const reason = choice?.finish_reason || "unknown";
+    console.warn("[ai] ascendant empty:", {
+      finish_reason: reason,
+      hasMessage: !!choice?.message,
+      contentType: typeof choice?.message?.content,
+    });
+    throw new Error(
+      `Пустой ответ от нейросети (асцендент). finish_reason: ${reason}`
+    );
   }
 
-  let rawJson = content
-    .trim()
+  let raw = content
     .replace(/^```(?:json)?\s*\n?/i, "")
     .replace(/\n?```\s*$/, "")
     .trim();
-  const firstBrace = rawJson.indexOf("{");
-  if (firstBrace > 0) {
-    rawJson = rawJson.slice(firstBrace);
-  }
-  const lastBrace = rawJson.lastIndexOf("}");
-  if (lastBrace !== -1 && lastBrace < rawJson.length - 1) {
-    rawJson = rawJson.slice(0, lastBrace + 1);
-  }
+  const start = raw.indexOf("{");
+  if (start > 0) raw = raw.slice(start);
+  const end = raw.lastIndexOf("}");
+  if (end !== -1 && end < raw.length - 1) raw = raw.slice(0, end + 1);
 
   try {
-    const parsed = JSON.parse(rawJson);
-    const rawAsc = parsed.ascendant;
-    const ascendant =
-      rawAsc && typeof rawAsc === "object" && !Array.isArray(rawAsc)
-        ? {
-            sign: String(rawAsc.sign ?? "").trim(),
-            description: String(rawAsc.description ?? "").trim(),
-          }
-        : {
-            sign: "",
-            description: typeof rawAsc === "string" ? rawAsc : "",
-          };
-    return {
-      ascendant,
-      natalChart: parsed.natalChart ?? "",
-    };
+    const parsed = JSON.parse(raw.replace(/,(\s*[}\]])/g, "$1"));
+    const sign = String(parsed?.sign ?? "").trim();
+    const description = String(parsed?.description ?? "").trim();
+    return { sign, description };
   } catch {
-    return {
-      ascendant: { sign: "", description: rawJson.slice(0, 200) },
-      natalChart: rawJson,
-    };
+    const signMatch = raw.match(/"sign"\s*:\s*"([^"]*)"/);
+    const descMatch = raw.match(/"description"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+    const sign = signMatch ? signMatch[1].replace(/\\"/g, '"').trim() : "";
+    const description = descMatch
+      ? descMatch[1].replace(/\\"/g, '"').replace(/\\n/g, "\n").trim()
+      : "";
+    if (sign || description) return { sign, description };
+    throw new Error("Нейросеть вернула некорректный JSON (асцендент)");
   }
+}
+
+/**
+ * Запрашивает текст натальной карты
+ */
+export async function fetchNatalChart(
+  dateOfBirth,
+  placeOfBirth,
+  retry = false
+) {
+  const openai = getOpenAI();
+  const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
+  const completion = await openai.chat.completions.create({
+    model,
+    messages: [
+      { role: "system", content: NATAL_CHART_PROMPT },
+      {
+        role: "user",
+        content: `Дата рождения: ${dateOfBirth}. Место рождения: ${placeOfBirth}.`,
+      },
+    ],
+    max_tokens: 800,
+  });
+  const choice = completion.choices[0];
+  let content = extractTextFromChoice(choice);
+  if (!content && !retry) {
+    await new Promise((r) => setTimeout(r, 1000));
+    return fetchNatalChart(dateOfBirth, placeOfBirth, true);
+  }
+  if (!content) {
+    const reason = choice?.finish_reason || "unknown";
+    console.warn("[ai] natalChart empty:", { finish_reason: reason });
+    throw new Error(
+      `Пустой ответ от нейросети (натальная карта). finish_reason: ${reason}`
+    );
+  }
+  return content;
+}
+
+/**
+ * Запрашивает асцендент и натальную карту — два параллельных запроса.
+ * @param {string} dateOfBirth - дата рождения (YYYY-MM-DD)
+ * @param {string} placeOfBirth - место рождения (город или страна)
+ * @returns {Promise<{ ascendant: { sign, description }, natalChart: string }>}
+ */
+export async function getAscendantAndNatalChart(dateOfBirth, placeOfBirth) {
+  const [ascendant, natalChart] = await Promise.all([
+    fetchAscendant(dateOfBirth, placeOfBirth),
+    fetchNatalChart(dateOfBirth, placeOfBirth),
+  ]);
+  return {
+    ascendant,
+    natalChart,
+  };
 }

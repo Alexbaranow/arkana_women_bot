@@ -4,6 +4,26 @@ import { getOnboardingUser, saveOnboardingUser } from "./Onboarding";
 import { getInitData } from "../utils/telegram";
 import { ScreenId } from "../constants/screens";
 
+/** Парсит ascendant из объекта или JSON-строки */
+function parseAscendant(raw) {
+  if (!raw) return null;
+  if (typeof raw === "object" && raw !== null && !Array.isArray(raw)) {
+    const sign = String(raw.sign ?? "").trim();
+    const description = String(raw.description ?? "").trim();
+    return sign || description ? { sign, description } : null;
+  }
+  if (typeof raw === "string" && raw.trim().startsWith("{")) {
+    try {
+      const parsed = JSON.parse(raw);
+      const asc = parsed?.ascendant ?? parsed;
+      return parseAscendant(asc);
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
 /** Извлекает читаемые данные для отображения: если сохранён сырой JSON — парсим и показываем только нужное */
 function getDisplayNatal(natalResult) {
   if (!natalResult) return null;
@@ -11,53 +31,29 @@ function getDisplayNatal(natalResult) {
     typeof natalResult.natalChart === "string"
       ? natalResult.natalChart.trim()
       : "";
+  let ascendant = parseAscendant(natalResult.ascendant);
+  let chartText =
+    typeof natalResult.natalChart === "string" ? natalResult.natalChart : "";
+
   if (natalChartStr.startsWith("{")) {
     try {
       const parsed = JSON.parse(natalChartStr);
-      const rawAsc = parsed.ascendant;
-      const ascendant =
-        rawAsc && typeof rawAsc === "object" && !Array.isArray(rawAsc)
-          ? {
-              sign: String(rawAsc.sign ?? "").trim(),
-              description: String(rawAsc.description ?? "").trim(),
-            }
-          : {
-              sign: "",
-              description: typeof rawAsc === "string" ? rawAsc : "",
-            };
-      const chartText =
-        typeof parsed.natalChart === "string"
-          ? parsed.natalChart.trim()
-          : natalChartStr;
-      if (ascendant.sign || ascendant.description || chartText) {
-        return { ascendant, natalChart: chartText };
-      }
+      const fromChart = parseAscendant(parsed.ascendant);
+      if (fromChart) ascendant = fromChart;
+      chartText =
+        typeof parsed.natalChart === "string" ? parsed.natalChart.trim() : "";
     } catch {
-      // не JSON — покажем как есть ниже
+      chartText = natalChartStr;
     }
   }
-  const asc = natalResult.ascendant;
-  const ascendant =
-    asc && typeof asc === "object" && asc !== null
-      ? {
-          sign: String(asc.sign ?? "").trim(),
-          description: String(asc.description ?? "").trim(),
-        }
-      : null;
-  if (ascendant && (ascendant.description || "").trim().startsWith("{")) {
+
+  if (ascendant || chartText) {
     return {
-      ascendant: { sign: ascendant.sign, description: "" },
-      natalChart:
-        typeof natalResult.natalChart === "string"
-          ? natalResult.natalChart
-          : "",
+      ascendant: ascendant || { sign: "", description: "" },
+      natalChart: chartText,
     };
   }
-  return {
-    ascendant: ascendant || asc,
-    natalChart:
-      typeof natalResult.natalChart === "string" ? natalResult.natalChart : "",
-  };
+  return null;
 }
 
 export default function Profile({ onBack, onNavigate }) {
@@ -181,16 +177,18 @@ export default function Profile({ onBack, onNavigate }) {
                 </p>
               )}
             </section>
-            <section
-              className="profile-section card"
-              data-aos="fade-up"
-              data-aos-delay="100"
-            >
-              <h2 className="profile-section-title">Натальная карта</h2>
-              <p className="profile-natal-text profile-natal-chart">
-                {displayNatal.natalChart}
-              </p>
-            </section>
+            {displayNatal.natalChart ? (
+              <section
+                className="profile-section card"
+                data-aos="fade-up"
+                data-aos-delay="100"
+              >
+                <h2 className="profile-section-title">Натальная карта</h2>
+                <p className="profile-natal-text profile-natal-chart">
+                  {displayNatal.natalChart}
+                </p>
+              </section>
+            ) : null}
             <div
               className="profile-natal-notice card"
               data-aos="fade-up"

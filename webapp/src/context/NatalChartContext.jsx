@@ -8,7 +8,8 @@ function getNatalResultFromStorage() {
     const raw = localStorage.getItem(STORAGE_NATAL_KEY);
     if (!raw) return null;
     const data = JSON.parse(raw);
-    return data?.ascendant != null ? data : null;
+    const hasData = data?.ascendant != null || (data?.natalChart ?? "").trim();
+    return hasData ? data : null;
   } catch {
     return null;
   }
@@ -26,30 +27,40 @@ export function NatalChartProvider({ children }) {
       if (!dateOfBirth || !placeOfBirth) return;
       setIsCalculating(true);
       setJustCalculated(false);
+      const payload = {
+        initData: initData || undefined,
+        dateOfBirth,
+        placeOfBirth: placeOfBirth.trim(),
+      };
+      const opts = {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      };
       try {
-        const res = await fetch(`${API_URL}/api/calculate-natal`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            initData: initData || undefined,
-            dateOfBirth,
-            placeOfBirth: placeOfBirth.trim(),
-          }),
-        });
-        const data = await res.json().catch(() => ({}));
-        if (res.ok && data.ascendant != null) {
+        const [ascRes, chartRes] = await Promise.all([
+          fetch(`${API_URL}/api/calculate-ascendant`, opts),
+          fetch(`${API_URL}/api/calculate-natal-chart`, opts),
+        ]);
+        const ascData = await ascRes.json().catch(() => ({}));
+        const chartData = await chartRes.json().catch(() => ({}));
+        const ascendant =
+          ascRes.ok && ascData?.ascendant != null
+            ? ascData.ascendant
+            : { sign: "", description: "" };
+        const natalChart =
+          chartRes.ok && chartData?.natalChart != null
+            ? chartData.natalChart
+            : "";
+        const hasResult =
+          ascendant?.sign || ascendant?.description || natalChart;
+        if (hasResult) {
           try {
             localStorage.setItem(
               STORAGE_NATAL_KEY,
-              JSON.stringify({
-                ascendant: data.ascendant,
-                natalChart: data.natalChart,
-              })
+              JSON.stringify({ ascendant, natalChart: natalChart || "" })
             );
-            setNatalResult({
-              ascendant: data.ascendant,
-              natalChart: data.natalChart,
-            });
+            setNatalResult({ ascendant, natalChart: natalChart || "" });
             setJustCalculated(true);
           } catch {}
         }

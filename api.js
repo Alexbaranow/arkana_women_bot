@@ -1,6 +1,6 @@
 import express from "express";
 import { validate, parse } from "@tma.js/init-data-node";
-import { getAnswer, getAscendantAndNatalChart } from "./services/ai.js";
+import { getAnswer, fetchAscendant, fetchNatalChart } from "./services/ai.js";
 import { hasFreeQuestion, useFreeQuestion } from "./db.js";
 
 const app = express();
@@ -65,47 +65,72 @@ app.post("/api/free-question", async (req, res) => {
   }
 });
 
-/** POST /api/calculate-natal — расчёт асцендента и натальной карты по данным онбординга */
-app.post("/api/calculate-natal", async (req, res) => {
+function validateNatalRequest(req, res) {
   const { initData, dateOfBirth, placeOfBirth } = req.body || {};
   const isDev = process.env.NODE_ENV !== "production";
 
   if (!dateOfBirth || !placeOfBirth) {
-    return res.status(400).json({
-      error: "Нужны dateOfBirth и placeOfBirth",
-    });
+    res.status(400).json({ error: "Нужны dateOfBirth и placeOfBirth" });
+    return null;
   }
-
   if (!isDev) {
     const token = process.env.BOT_TOKEN;
     if (!initData || !token) {
-      return res.status(401).json({
+      res.status(401).json({
         error: "Нужны initData (открыть из Telegram) и BOT_TOKEN",
       });
+      return null;
     }
     try {
       validate(initData, token);
       parse(initData);
     } catch (err) {
-      console.error(
-        "Calculate-natal initData validation failed:",
-        err?.message
-      );
-      return res.status(401).json({ error: "Неверные данные приложения" });
+      console.error("Natal initData validation failed:", err?.message);
+      res.status(401).json({ error: "Неверные данные приложения" });
+      return null;
     }
   }
+  return {
+    dateOfBirth: String(dateOfBirth).trim(),
+    placeOfBirth: String(placeOfBirth).trim(),
+  };
+}
 
+/** POST /api/calculate-ascendant — только асцендент */
+app.post("/api/calculate-ascendant", async (req, res) => {
+  const params = validateNatalRequest(req, res);
+  if (!params) return;
   try {
-    const result = await getAscendantAndNatalChart(
-      String(dateOfBirth).trim(),
-      String(placeOfBirth).trim()
+    const ascendant = await fetchAscendant(
+      params.dateOfBirth,
+      params.placeOfBirth
     );
-    return res.json({ ok: true, ...result });
+    return res.json({ ok: true, ascendant });
   } catch (err) {
-    console.error("API calculate-natal error:", err);
-    return res.status(500).json({
-      error: "Не удалось рассчитать. Попробуй позже.",
-    });
+    console.error("API calculate-ascendant error:", err);
+    return res
+      .status(500)
+      .json({ error: err?.message || "Не удалось рассчитать асцендент." });
+  }
+});
+
+/** POST /api/calculate-natal-chart — только натальная карта */
+app.post("/api/calculate-natal-chart", async (req, res) => {
+  const params = validateNatalRequest(req, res);
+  if (!params) return;
+  try {
+    const natalChart = await fetchNatalChart(
+      params.dateOfBirth,
+      params.placeOfBirth
+    );
+    return res.json({ ok: true, natalChart });
+  } catch (err) {
+    console.error("API calculate-natal-chart error:", err);
+    return res
+      .status(500)
+      .json({
+        error: err?.message || "Не удалось рассчитать натальную карту.",
+      });
   }
 });
 

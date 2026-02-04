@@ -165,8 +165,6 @@ export default function AllSpreads({ onBack, onNavigate }) {
                 className={`spread-card ${s.price ? "spread-card-paid" : ""} ${
                   isExpanded ? "spread-card-expanded" : ""
                 }`}
-                data-aos="fade-up"
-                data-aos-delay={80 + idx * 40}
               >
                 <button
                   type="button"
