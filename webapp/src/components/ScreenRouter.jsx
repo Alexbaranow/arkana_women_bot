@@ -9,8 +9,12 @@ export default function ScreenRouter({
   goTo,
   goBack,
   stubTitle,
+  screenPayload,
 }) {
-  const registry = createScreenRegistry({ goTo, goBack, stubTitle });
+  const registry = createScreenRegistry(
+    { goTo, goBack, stubTitle },
+    screenPayload
+  );
   const entry = registry[currentScreen] ?? registry[FALLBACK_SCREEN];
 
   if (!entry) {

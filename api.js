@@ -1,6 +1,6 @@
 import express from "express";
 import { validate, parse } from "@tma.js/init-data-node";
-import { getAnswer } from "./services/ai.js";
+import { getAnswer, getAscendantAndNatalChart } from "./services/ai.js";
 import { hasFreeQuestion, useFreeQuestion } from "./db.js";
 
 const app = express();
@@ -61,6 +61,50 @@ app.post("/api/free-question", async (req, res) => {
     console.error("API free question error:", err);
     return res.status(500).json({
       error: "Не удалось получить ответ. Попробуй позже или короче вопрос.",
+    });
+  }
+});
+
+/** POST /api/calculate-natal — расчёт асцендента и натальной карты по данным онбординга */
+app.post("/api/calculate-natal", async (req, res) => {
+  const { initData, dateOfBirth, placeOfBirth } = req.body || {};
+  const isDev = process.env.NODE_ENV !== "production";
+
+  if (!dateOfBirth || !placeOfBirth) {
+    return res.status(400).json({
+      error: "Нужны dateOfBirth и placeOfBirth",
+    });
+  }
+
+  if (!isDev) {
+    const token = process.env.BOT_TOKEN;
+    if (!initData || !token) {
+      return res.status(401).json({
+        error: "Нужны initData (открыть из Telegram) и BOT_TOKEN",
+      });
+    }
+    try {
+      validate(initData, token);
+      parse(initData);
+    } catch (err) {
+      console.error(
+        "Calculate-natal initData validation failed:",
+        err?.message
+      );
+      return res.status(401).json({ error: "Неверные данные приложения" });
+    }
+  }
+
+  try {
+    const result = await getAscendantAndNatalChart(
+      String(dateOfBirth).trim(),
+      String(placeOfBirth).trim()
+    );
+    return res.json({ ok: true, ...result });
+  } catch (err) {
+    console.error("API calculate-natal error:", err);
+    return res.status(500).json({
+      error: "Не удалось рассчитать. Попробуй позже.",
     });
   }
 });

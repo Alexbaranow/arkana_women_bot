@@ -1,6 +1,15 @@
 import { ScreenId } from "../constants/screens";
+import { isUserRegistered } from "./Onboarding";
 
 export default function MainMenu({ onNavigate }) {
+  const handleFreeTarot = () => {
+    if (isUserRegistered()) {
+      onNavigate(ScreenId.FREE_TAROT);
+    } else {
+      onNavigate(ScreenId.ONBOARDING, { next: ScreenId.FREE_TAROT });
+    }
+  };
+
   return (
     <div className="screen">
       <header className="header header-compact">
@@ -12,7 +21,7 @@ export default function MainMenu({ onNavigate }) {
         <p className="section-label">Бесплатный вопрос</p>
         <button
           className="menu-card menu-card-featured"
-          onClick={() => onNavigate(ScreenId.FREE_TAROT)}
+          onClick={handleFreeTarot}
         >
           <span className="menu-icon">✨</span>
           <div className="menu-text">
@@ -30,7 +39,7 @@ export default function MainMenu({ onNavigate }) {
         <div className="menu-grid">
           <button
             className="menu-card"
-            onClick={() => onNavigate("all-spreads")}
+            onClick={() => onNavigate(ScreenId.ALL_SPREADS)}
           >
             <span className="menu-icon">📋</span>
             <div className="menu-text">

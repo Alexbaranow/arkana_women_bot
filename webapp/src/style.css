@@ -247,6 +247,118 @@ h1 {
   margin: 24px 0;
 }
 
+/* Расклады — раскрывающиеся карточки */
+.spread-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.spread-card {
+  background: var(--color-card);
+  border: 1px solid rgba(139, 122, 184, 0.15);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+}
+
+.spread-card-paid {
+  border-color: var(--color-gold-soft);
+  background: linear-gradient(
+    135deg,
+    rgba(201, 162, 39, 0.08) 0%,
+    var(--color-card) 100%
+  );
+}
+
+.spread-card-expanded {
+  box-shadow: var(--shadow-card);
+}
+
+.spread-card-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 16px 18px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  color: inherit;
+  transition: transform 0.2s;
+}
+
+.spread-card-head:active {
+  transform: scale(0.99);
+}
+
+.spread-card-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.spread-card-price {
+  flex-shrink: 0;
+  margin-right: 4px;
+}
+
+.spread-card-chevron {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.spread-card-body {
+  padding: 0 18px 18px;
+  border-top: 1px solid rgba(139, 122, 184, 0.12);
+  padding-top: 16px;
+  margin: 0 18px;
+}
+
+.spread-card-description {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--color-text-soft);
+  margin-bottom: 14px;
+}
+
+.spread-card-label {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.spread-card-list {
+  font-size: 14px;
+  color: var(--color-text-soft);
+  line-height: 1.5;
+  margin: 0 0 14px 18px;
+  padding: 0;
+}
+
+.spread-card-list li {
+  margin-bottom: 4px;
+}
+
+.spread-card-total {
+  font-size: 14px;
+  color: var(--color-text);
+  margin-bottom: 14px;
+}
+
+.spread-card-total strong {
+  color: var(--color-primary-deep);
+}
+
+.spread-card-btn {
+  margin-top: 0;
+}
+
 /* Форма отзыва */
 .rating-stars {
   display: flex;
@@ -302,4 +414,54 @@ h1 {
   margin-top: 12px;
   font-size: 14px;
   color: #c0392b;
+}
+
+/* Онбординг (имя, дата рождения) */
+.onboarding-note {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.onboarding-input {
+  min-height: 48px;
+  resize: none;
+}
+
+/* Глобальный индикатор расчёта асцендента/натальной карты (заполняемая полоса) */
+.global-natal-indicator {
+  padding: 0;
+  background: linear-gradient(
+    135deg,
+    var(--color-primary) 0%,
+    var(--color-primary-deep) 100%
+  );
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: var(--shadow-soft);
+}
+
+.global-natal-indicator-track {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.25);
+  overflow: hidden;
+}
+
+.global-natal-indicator-fill {
+  height: 100%;
+  width: 0;
+  background: rgba(255, 255, 255, 0.95);
+  animation: global-natal-fill 12s linear forwards;
+}
+
+.global-natal-indicator-text {
+  display: block;
+  padding: 10px 16px;
+  text-align: center;
+}
+
+@keyframes global-natal-fill {
+  to {
+    width: 100%;
+  }
 }

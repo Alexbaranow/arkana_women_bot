@@ -4,7 +4,9 @@
 export const ScreenId = Object.freeze({
   LANDING: "landing",
   MAIN: "main",
+  ONBOARDING: "onboarding",
   FREE_TAROT: "freeTarot",
+  ALL_SPREADS: "all-spreads",
   REVIEWS: "reviews",
   LEAVE_REVIEW: "leaveReview",
   STUB: "stub",
@@ -14,9 +16,13 @@ export const ScreenId = Object.freeze({
  * Заголовки для экранов-заглушек (экран ещё в разработке)
  */
 export const StubTitles = Object.freeze({
-  "all-spreads": "Все расклады",
+  "card-day": "Карта дня",
   "card-3days": "Карта дня на 3 дня",
+  "three-cards": "Три карты",
+  relationship: "Расклад на отношения",
+  situation: "Расклад на ситуацию",
   "fate-matrix": "Матрица судьбы",
+  "natal-chart": "Натальная карта",
   "my-readings": "Мои расклады",
 });
 

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { getOnboardingUser } from "./Onboarding";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 
@@ -8,6 +9,9 @@ function getInitData() {
 }
 
 export default function FreeTarot({ onBack }) {
+  const user = getOnboardingUser();
+  const userName = user?.name && !user?.skipped ? user.name : null;
+
   const [question, setQuestion] = useState("");
   const [loading, setLoading] = useState(false);
   const [answer, setAnswer] = useState(null);
@@ -137,7 +141,9 @@ export default function FreeTarot({ onBack }) {
               className="subtitle"
               style={{ marginBottom: "16px" }}
             >
-              Один бесплатный вопрос картам. Напиши, что хочешь узнать ✨
+              {userName
+                ? `${userName}, один бесплатный вопрос картам. Напиши, что хочешь узнать ✨`
+                : "Один бесплатный вопрос картам. Напиши, что хочешь узнать ✨"}
             </p>
             <label className="review-label">
               <textarea

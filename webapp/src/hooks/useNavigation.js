@@ -51,6 +51,7 @@ export function useNavigation() {
   const [stubTitle, setStubTitle] = useState(
     () => resolveScreenFromUrl().stubTitle
   );
+  const [screenPayload, setScreenPayload] = useState(null);
 
   // Перепроверяем URL при монтировании (Telegram/браузер могут подставить params позже)
   useEffect(() => {
@@ -61,12 +62,14 @@ export function useNavigation() {
     }
   }, []);
 
-  const goTo = useCallback((target) => {
+  const goTo = useCallback((target, payload) => {
     if (Object.values(ScreenId).includes(target)) {
       setCurrentScreen(target);
+      setScreenPayload(payload ?? null);
     } else if (StubTitles[target]) {
       setStubTitle(StubTitles[target]);
       setCurrentScreen(ScreenId.STUB);
+      setScreenPayload(null);
     }
   }, []);
 
@@ -79,5 +82,6 @@ export function useNavigation() {
     goTo,
     goBack,
     stubTitle,
+    screenPayload,
   };
 }
