@@ -103,7 +103,10 @@ export default function Onboarding({ onBack, onComplete }) {
 
   return (
     <div className="screen">
-      <header className="header header-compact">
+      <header
+        className="header header-compact"
+        data-aos="fade-down"
+      >
         <button
           type="button"
           className="btn-back"
@@ -115,13 +118,18 @@ export default function Onboarding({ onBack, onComplete }) {
       </header>
       <main>
         <form onSubmit={handleSubmit}>
-          <div className="card">
+          <div
+            className="card"
+            data-aos="fade-up"
+            data-aos-delay="100"
+          >
             <p
               className="subtitle onboarding-note"
               style={{ marginBottom: "20px" }}
             >
               Это нужно для определения асцендента, натальной карты и более
-              точного прогноза ✨
+              точного прогноза ✨ Асцендент и натальную карту можно будет
+              рассчитать или пересчитать в личном кабинете в любое время.
             </p>
             <label className="review-label">
               <span className="subtitle">Как к тебе обращаться?</span>
@@ -177,6 +185,8 @@ export default function Onboarding({ onBack, onComplete }) {
             type="submit"
             className="btn btn-primary"
             disabled={!name.trim() || !dateOfBirth || !placeOfBirth.trim()}
+            data-aos="fade-up"
+            data-aos-delay="150"
           >
             Продолжить
           </button>
@@ -185,6 +195,8 @@ export default function Onboarding({ onBack, onComplete }) {
             className="btn btn-outline"
             onClick={handleSkip}
             style={{ marginTop: "8px" }}
+            data-aos="fade-up"
+            data-aos-delay="180"
           >
             Не указывать — продолжить без этого
           </button>
@@ -193,6 +205,8 @@ export default function Onboarding({ onBack, onComplete }) {
             className="btn btn-outline"
             onClick={onBack}
             style={{ marginTop: "8px" }}
+            data-aos="fade-up"
+            data-aos-delay="200"
           >
             ← Назад
           </button>

@@ -84,7 +84,10 @@ export default function FreeTarot({ onBack }) {
   if (answer) {
     return (
       <div className="screen">
-        <header className="header header-compact">
+        <header
+          className="header header-compact"
+          data-aos="fade-down"
+        >
           <button
             className="btn-back"
             onClick={() => setAnswer(null)}
@@ -94,7 +97,11 @@ export default function FreeTarot({ onBack }) {
           <h1>Ответ</h1>
         </header>
         <main>
-          <div className="card">
+          <div
+            className="card"
+            data-aos="fade-up"
+            data-aos-delay="100"
+          >
             <p className="free-tarot-answer">{answer}</p>
             <p
               className="subtitle"
@@ -125,7 +132,10 @@ export default function FreeTarot({ onBack }) {
 
   return (
     <div className="screen">
-      <header className="header header-compact">
+      <header
+        className="header header-compact"
+        data-aos="fade-down"
+      >
         <button
           className="btn-back"
           onClick={onBack}
@@ -136,7 +146,11 @@ export default function FreeTarot({ onBack }) {
       </header>
       <main>
         <form onSubmit={handleSubmit}>
-          <div className="card">
+          <div
+            className="card"
+            data-aos="fade-up"
+            data-aos-delay="100"
+          >
             <p
               className="subtitle"
               style={{ marginBottom: "16px" }}

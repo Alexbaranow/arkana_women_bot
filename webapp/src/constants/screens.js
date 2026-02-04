@@ -4,6 +4,7 @@
 export const ScreenId = Object.freeze({
   LANDING: "landing",
   MAIN: "main",
+  PROFILE: "profile",
   ONBOARDING: "onboarding",
   FREE_TAROT: "freeTarot",
   ALL_SPREADS: "all-spreads",

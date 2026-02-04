@@ -114,6 +114,89 @@ h1 {
   min-height: 100vh;
 }
 
+/* Верхняя полоса с профилем */
+.app-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0 16px;
+  margin: 0 -24px 0 -24px;
+  padding-left: 24px;
+  padding-right: 24px;
+  gap: 12px;
+}
+
+.app-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.app-topbar-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-primary-deep);
+}
+
+.app-profile-btn {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--color-card);
+  box-shadow: var(--shadow-soft);
+  color: var(--color-primary-deep);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s, box-shadow 0.2s, color 0.2s;
+}
+
+.app-profile-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.app-profile-btn:hover {
+  color: var(--color-primary);
+  box-shadow: var(--shadow-card);
+}
+
+.app-profile-btn:active {
+  transform: scale(0.96);
+}
+
+/* Уведомление «натальная карта готова» */
+.natal-ready-notice {
+  display: block;
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 14px 18px;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-primary-deep);
+  background: linear-gradient(
+    135deg,
+    rgba(139, 122, 184, 0.15) 0%,
+    rgba(232, 180, 200, 0.2) 100%
+  );
+  border: 1px solid var(--color-primary-soft);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.natal-ready-notice:hover {
+  box-shadow: var(--shadow-soft);
+}
+
+.natal-ready-notice:active {
+  transform: scale(0.99);
+}
+
 .header-compact {
   display: flex;
   align-items: center;
@@ -451,7 +534,7 @@ h1 {
   height: 100%;
   width: 0;
   background: rgba(255, 255, 255, 0.95);
-  animation: global-natal-fill 12s linear forwards;
+  animation: global-natal-fill 19s linear forwards;
 }
 
 .global-natal-indicator-text {
@@ -464,4 +547,127 @@ h1 {
   to {
     width: 100%;
   }
+}
+
+/* Личный кабинет */
+.profile-main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.profile-section {
+  margin-bottom: 0;
+}
+
+.profile-section .card {
+  margin-bottom: 0;
+}
+
+.profile-section-title {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+.profile-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.profile-status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.profile-status-dot.filled {
+  background: var(--color-primary);
+}
+
+.profile-status-dot.skipped {
+  background: var(--color-text-muted);
+}
+
+.profile-subtext {
+  font-size: 14px;
+  color: var(--color-text-soft);
+  margin-top: 6px;
+}
+
+.profile-subtitle {
+  font-size: 14px;
+  color: var(--color-text-soft);
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+.profile-ascendant-sign {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-primary-deep);
+  margin-bottom: 8px;
+}
+
+.profile-natal-text {
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--color-text);
+  white-space: pre-wrap;
+}
+
+.profile-natal-chart {
+  margin-top: 4px;
+}
+
+.profile-natal-notice {
+  background: linear-gradient(
+    135deg,
+    rgba(139, 122, 184, 0.08) 0%,
+    rgba(232, 180, 200, 0.06) 100%
+  );
+  border-color: var(--color-primary-soft);
+}
+
+.profile-natal-notice-text {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-soft);
+  margin-bottom: 12px;
+}
+
+.profile-natal-notice-btn {
+  margin-top: 0;
+}
+
+.profile-menu-card {
+  margin-top: 4px;
+}
+
+.profile-natal-recalc .profile-section-title {
+  margin-bottom: 8px;
+}
+
+.profile-recalc-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.profile-recalc-fields .review-label .subtitle {
+  font-size: 14px;
+  margin-top: 0;
+}
+
+.profile-recalc-btn {
+  margin-top: 4px;
 }

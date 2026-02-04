@@ -4,6 +4,7 @@
 import { ScreenId } from "../constants/screens";
 import Landing from "../screens/Landing";
 import MainMenu from "../screens/MainMenu";
+import Profile from "../screens/Profile";
 import Onboarding from "../screens/Onboarding";
 import FreeTarot from "../screens/FreeTarot";
 import AllSpreads from "../screens/AllSpreads";
@@ -32,6 +33,10 @@ export function createScreenRegistry(renderer, screenPayload = null) {
     [ScreenId.MAIN]: {
       component: MainMenu,
       getProps: () => ({ onNavigate: goTo }),
+    },
+    [ScreenId.PROFILE]: {
+      component: Profile,
+      getProps: () => ({ onBack: goBack, onNavigate: goTo }),
     },
     [ScreenId.ONBOARDING]: {
       component: Onboarding,

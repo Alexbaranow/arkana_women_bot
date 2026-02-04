@@ -23,19 +23,36 @@ export default function LeaveReview({ onBack, onSubmit }) {
   if (isSubmitted) {
     return (
       <div className="screen">
-        <header className="header header-compact">
-          <button className="btn-back" onClick={onBack}>
+        <header
+          className="header header-compact"
+          data-aos="fade-down"
+        >
+          <button
+            className="btn-back"
+            onClick={onBack}
+          >
             ←
           </button>
           <h1>Спасибо!</h1>
         </header>
         <main>
-          <div className="card">
-            <p className="subtitle" style={{ textAlign: "center", marginBottom: "24px" }}>
+          <div
+            className="card"
+            data-aos="zoom-in"
+            data-aos-delay="100"
+          >
+            <p
+              className="subtitle"
+              style={{ textAlign: "center", marginBottom: "24px" }}
+            >
               Твой отзыв сохранён. Это очень ценно для меня! ✨
             </p>
-            <p className="subtitle" style={{ fontSize: "13px", marginBottom: "16px" }}>
-              Хочешь оставить отзыв ещё и на платформе? Это поможет другим найти меня.
+            <p
+              className="subtitle"
+              style={{ fontSize: "13px", marginBottom: "16px" }}
+            >
+              Хочешь оставить отзыв ещё и на платформе? Это поможет другим найти
+              меня.
             </p>
             <button
               type="button"
@@ -45,7 +62,11 @@ export default function LeaveReview({ onBack, onSubmit }) {
               🌟 Опубликовать на iRecommend.ru
             </button>
           </div>
-          <button type="button" className="btn btn-outline" onClick={onBack}>
+          <button
+            type="button"
+            className="btn btn-outline"
+            onClick={onBack}
+          >
             Вернуться в меню
           </button>
         </main>
@@ -55,16 +76,29 @@ export default function LeaveReview({ onBack, onSubmit }) {
 
   return (
     <div className="screen">
-      <header className="header header-compact">
-        <button className="btn-back" onClick={onBack}>
+      <header
+        className="header header-compact"
+        data-aos="fade-down"
+      >
+        <button
+          className="btn-back"
+          onClick={onBack}
+        >
           ←
         </button>
         <h1>Оставить отзыв</h1>
       </header>
       <main>
         <form onSubmit={handleSubmit}>
-          <div className="card">
-            <p className="subtitle" style={{ marginBottom: "16px" }}>
+          <div
+            className="card"
+            data-aos="fade-up"
+            data-aos-delay="100"
+          >
+            <p
+              className="subtitle"
+              style={{ marginBottom: "16px" }}
+            >
               Твоё мнение важно! Оцени, пожалуйста:
             </p>
             <div className="rating-stars">

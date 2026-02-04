@@ -12,16 +12,18 @@ export default function MainMenu({ onNavigate }) {
 
   return (
     <div className="screen">
-      <header className="header header-compact">
-        <div className="logo logo-small">🔮</div>
-        <h1>Женский Аркан</h1>
-      </header>
-
       <main>
-        <p className="section-label">Бесплатный вопрос</p>
+        <p
+          className="section-label"
+          data-aos="fade-right"
+        >
+          Бесплатный вопрос
+        </p>
         <button
           className="menu-card menu-card-featured"
           onClick={handleFreeTarot}
+          data-aos="fade-up"
+          data-aos-delay="50"
         >
           <span className="menu-icon">✨</span>
           <div className="menu-text">
@@ -33,6 +35,8 @@ export default function MainMenu({ onNavigate }) {
         <p
           className="section-label"
           style={{ marginTop: "20px" }}
+          data-aos="fade-right"
+          data-aos-delay="100"
         >
           Расклады и услуги
         </p>
@@ -40,6 +44,8 @@ export default function MainMenu({ onNavigate }) {
           <button
             className="menu-card"
             onClick={() => onNavigate(ScreenId.ALL_SPREADS)}
+            data-aos="fade-up"
+            data-aos-delay="120"
           >
             <span className="menu-icon">📋</span>
             <div className="menu-text">
@@ -49,6 +55,8 @@ export default function MainMenu({ onNavigate }) {
           <button
             className="menu-card menu-card-paid"
             onClick={() => onNavigate("card-3days")}
+            data-aos="fade-up"
+            data-aos-delay="150"
           >
             <span className="menu-icon">🪙</span>
             <div className="menu-text">
@@ -59,6 +67,8 @@ export default function MainMenu({ onNavigate }) {
           <button
             className="menu-card"
             onClick={() => onNavigate("fate-matrix")}
+            data-aos="fade-up"
+            data-aos-delay="180"
           >
             <span className="menu-icon">🌌</span>
             <div className="menu-text">
@@ -69,6 +79,8 @@ export default function MainMenu({ onNavigate }) {
           <button
             className="menu-card"
             onClick={() => onNavigate("my-readings")}
+            data-aos="fade-up"
+            data-aos-delay="210"
           >
             <span className="menu-icon">📂</span>
             <div className="menu-text">
@@ -77,9 +89,17 @@ export default function MainMenu({ onNavigate }) {
           </button>
         </div>
 
-        <div className="divider"></div>
+        <div
+          className="divider"
+          data-aos="fade"
+          data-aos-delay="250"
+        ></div>
 
-        <div className="menu-footer">
+        <div
+          className="menu-footer"
+          data-aos="fade-up"
+          data-aos-delay="280"
+        >
           <button
             className="btn btn-secondary"
             onClick={() => onNavigate(ScreenId.REVIEWS)}

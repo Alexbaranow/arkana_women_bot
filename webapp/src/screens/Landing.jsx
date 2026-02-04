@@ -1,14 +1,21 @@
 export default function Landing({ onStart }) {
   return (
     <div className="screen">
-      <header className="header">
+      <header
+        className="header"
+        data-aos="fade-down"
+      >
         <div className="logo">🔮</div>
         <h1>Женский Аркан</h1>
         <p className="subtitle">Таро и нумерология — в твоём телефоне</p>
       </header>
 
       <main>
-        <div className="card">
+        <div
+          className="card"
+          data-aos="fade-up"
+          data-aos-delay="100"
+        >
           <p
             className="subtitle"
             style={{ marginBottom: 0 }}
@@ -21,11 +28,17 @@ export default function Landing({ onStart }) {
         <button
           className="btn btn-primary"
           onClick={onStart}
+          data-aos="zoom-in"
+          data-aos-delay="200"
         >
           ✨ Начать
         </button>
 
-        <div className="divider"></div>
+        <div
+          className="divider"
+          data-aos="fade"
+          data-aos-delay="300"
+        ></div>
 
         <p
           className="subtitle"
@@ -34,6 +47,8 @@ export default function Landing({ onStart }) {
             fontSize: "13px",
             color: "var(--color-text-muted)",
           }}
+          data-aos="fade-up"
+          data-aos-delay="350"
         >
           Расклады от реального таролога · Без ИИ
         </p>

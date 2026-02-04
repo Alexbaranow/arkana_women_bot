@@ -74,16 +74,41 @@ export async function getAscendantAndNatalChart(dateOfBirth, placeOfBirth) {
     throw new Error("Пустой ответ от нейросети");
   }
 
+  let rawJson = content
+    .trim()
+    .replace(/^```(?:json)?\s*\n?/i, "")
+    .replace(/\n?```\s*$/, "")
+    .trim();
+  const firstBrace = rawJson.indexOf("{");
+  if (firstBrace > 0) {
+    rawJson = rawJson.slice(firstBrace);
+  }
+  const lastBrace = rawJson.lastIndexOf("}");
+  if (lastBrace !== -1 && lastBrace < rawJson.length - 1) {
+    rawJson = rawJson.slice(0, lastBrace + 1);
+  }
+
   try {
-    const parsed = JSON.parse(content.trim());
+    const parsed = JSON.parse(rawJson);
+    const rawAsc = parsed.ascendant;
+    const ascendant =
+      rawAsc && typeof rawAsc === "object" && !Array.isArray(rawAsc)
+        ? {
+            sign: String(rawAsc.sign ?? "").trim(),
+            description: String(rawAsc.description ?? "").trim(),
+          }
+        : {
+            sign: "",
+            description: typeof rawAsc === "string" ? rawAsc : "",
+          };
     return {
-      ascendant: parsed.ascendant ?? "",
+      ascendant,
       natalChart: parsed.natalChart ?? "",
     };
   } catch {
     return {
-      ascendant: content.slice(0, 200),
-      natalChart: content,
+      ascendant: { sign: "", description: rawJson.slice(0, 200) },
+      natalChart: rawJson,
     };
   }
 }

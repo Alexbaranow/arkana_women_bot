@@ -121,7 +121,10 @@ export default function AllSpreads({ onBack, onNavigate }) {
 
   return (
     <div className="screen">
-      <header className="header header-compact">
+      <header
+        className="header header-compact"
+        data-aos="fade-down"
+      >
         <button
           className="btn-back"
           onClick={onBack}
@@ -135,6 +138,8 @@ export default function AllSpreads({ onBack, onNavigate }) {
         <p
           className="subtitle"
           style={{ marginBottom: "8px" }}
+          data-aos="fade-up"
+          data-aos-delay="50"
         >
           Выбери расклад — все расклады делает реальный человек
         </p>
@@ -145,12 +150,14 @@ export default function AllSpreads({ onBack, onNavigate }) {
             fontSize: "13px",
             color: "var(--color-text-muted)",
           }}
+          data-aos="fade-up"
+          data-aos-delay="80"
         >
           🔮 Не бот: живая интерпретация карт
         </p>
 
         <div className="spread-list">
-          {SPREADS.map((s) => {
+          {SPREADS.map((s, idx) => {
             const isExpanded = expandedId === s.id;
             return (
               <div
@@ -158,6 +165,8 @@ export default function AllSpreads({ onBack, onNavigate }) {
                 className={`spread-card ${s.price ? "spread-card-paid" : ""} ${
                   isExpanded ? "spread-card-expanded" : ""
                 }`}
+                data-aos="fade-up"
+                data-aos-delay={80 + idx * 40}
               >
                 <button
                   type="button"
