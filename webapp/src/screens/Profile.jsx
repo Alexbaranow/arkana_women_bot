@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useNatalChart } from "../context/NatalChartContext";
 import { getOnboardingUser, saveOnboardingUser } from "./Onboarding";
 import { getInitData } from "../utils/telegram";
@@ -35,6 +35,25 @@ function parseAscendant(raw) {
     }
   }
   return null;
+}
+
+/** Для <input type="date"> нужен формат YYYY-MM-DD. Приводим любую дату к нему. */
+function toDateInputValue(str) {
+  if (!str || typeof str !== "string") return "";
+  const s = str.trim();
+  if (!s) return "";
+  const d = new Date(s);
+  if (Number.isNaN(d.getTime())) return s;
+  return d.toISOString().slice(0, 10);
+}
+
+/** Для <input type="time"> нужен формат HH:mm. Обрезаем до первых 5 символов при необходимости. */
+function toTimeInputValue(str) {
+  if (str == null || str === "") return "";
+  const s = String(str).trim();
+  if (!s) return "";
+  if (/^\d{1,2}:\d{2}(:\d{2})?$/.test(s)) return s.slice(0, 5);
+  return s;
 }
 
 /** Извлекает читаемые данные для отображения: если сохранён сырой JSON — парсим и показываем только нужное */
@@ -83,9 +102,19 @@ export default function Profile({ onBack, onNavigate }) {
   const [recalcTime, setRecalcTime] = useState("");
   const [recalcError, setRecalcError] = useState(null);
 
+  const prevCalculating = useRef(isCalculating);
+
   useEffect(() => {
     clearJustCalculated();
   }, [clearJustCalculated]);
+
+  // После завершения пересчёта снова прячем меню ввода данных (как на экране с кнопкой «Повторный расчёт»)
+  useEffect(() => {
+    if (prevCalculating.current && !isCalculating) {
+      setShowRecalcForm(false);
+    }
+    prevCalculating.current = isCalculating;
+  }, [isCalculating]);
 
   const hasUser = user && !user.skipped && user.name;
   const hasNatalData = hasUser && user.dateOfBirth && user.placeOfBirth;
@@ -260,9 +289,9 @@ export default function Profile({ onBack, onNavigate }) {
               className="btn btn-outline profile-recalc-btn"
               onClick={() => {
                 setShowRecalcForm(true);
-                setRecalcDate(user?.dateOfBirth || "");
+                setRecalcDate(toDateInputValue(user?.dateOfBirth || ""));
                 setRecalcPlace(user?.placeOfBirth || "");
-                setRecalcTime(user?.timeOfBirth || "");
+                setRecalcTime(toTimeInputValue(user?.timeOfBirth || ""));
               }}
             >
               Повторный расчёт
@@ -279,9 +308,9 @@ export default function Profile({ onBack, onNavigate }) {
                 className="btn btn-outline profile-recalc-btn"
                 onClick={() => {
                   setShowRecalcForm(true);
-                  setRecalcDate(user?.dateOfBirth || "");
+                  setRecalcDate(toDateInputValue(user?.dateOfBirth || ""));
                   setRecalcPlace(user?.placeOfBirth || "");
-                  setRecalcTime(user?.timeOfBirth || "");
+                  setRecalcTime(toTimeInputValue(user?.timeOfBirth || ""));
                 }}
               >
                 Указать данные и рассчитать
@@ -295,8 +324,8 @@ export default function Profile({ onBack, onNavigate }) {
                   <span className="subtitle">Дата рождения</span>
                   <input
                     type="date"
-                    className="review-textarea onboarding-input"
-                    value={recalcDate || user?.dateOfBirth || ""}
+                    className="profile-recalc-input"
+                    value={recalcDate || toDateInputValue(user?.dateOfBirth) || ""}
                     onChange={(e) => setRecalcDate(e.target.value)}
                     max={new Date().toISOString().slice(0, 10)}
                   />
@@ -305,8 +334,8 @@ export default function Profile({ onBack, onNavigate }) {
                   <span className="subtitle">Время рождения</span>
                   <input
                     type="time"
-                    className="review-textarea onboarding-input"
-                    value={recalcTime || user?.timeOfBirth || ""}
+                    className="profile-recalc-input"
+                    value={recalcTime || toTimeInputValue(user?.timeOfBirth) || ""}
                     onChange={(e) => setRecalcTime(e.target.value)}
                   />
                 </label>
@@ -316,7 +345,7 @@ export default function Profile({ onBack, onNavigate }) {
                   </span>
                   <input
                     type="text"
-                    className="review-textarea onboarding-input"
+                    className="profile-recalc-input"
                     value={recalcPlace || user?.placeOfBirth || ""}
                     onChange={(e) => setRecalcPlace(e.target.value)}
                     placeholder="Например: Москва"

@@ -734,6 +734,26 @@ input[type="date"] {
   margin-top: 0;
 }
 
+/* Поля ввода пересчёта: компактная высота на мобильных, 16px — без автозума iOS */
+.profile-recalc-input {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: 12px 16px;
+  border: 1px solid var(--color-primary-soft);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 16px;
+  resize: none;
+  box-sizing: border-box;
+}
+
+.profile-recalc-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
 .profile-recalc-btn {
   margin-top: 4px;
 }
