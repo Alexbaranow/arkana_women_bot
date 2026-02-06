@@ -4,7 +4,12 @@ import { useNatalChart } from "../context/NatalChartContext";
 
 const STORAGE_KEY = "arkana_user";
 
-export function saveOnboardingUser(name, dateOfBirth, placeOfBirth) {
+export function saveOnboardingUser(
+  name,
+  dateOfBirth,
+  placeOfBirth,
+  timeOfBirth = ""
+) {
   try {
     localStorage.setItem(
       STORAGE_KEY,
@@ -12,6 +17,7 @@ export function saveOnboardingUser(name, dateOfBirth, placeOfBirth) {
         name: name.trim(),
         dateOfBirth,
         placeOfBirth: placeOfBirth?.trim() || "",
+        timeOfBirth: typeof timeOfBirth === "string" ? timeOfBirth.trim() : "",
       })
     );
     return true;
@@ -58,6 +64,7 @@ export default function Onboarding({ onBack, onComplete }) {
   const { startCalculation } = useNatalChart();
   const [name, setName] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
+  const [timeOfBirth, setTimeOfBirth] = useState("");
   const [placeOfBirth, setPlaceOfBirth] = useState("");
   const [error, setError] = useState(null);
 
@@ -84,10 +91,18 @@ export default function Onboarding({ onBack, onComplete }) {
       );
       return;
     }
-    if (saveOnboardingUser(trimmedName, dateOfBirth, placeOfBirth.trim())) {
+    if (
+      saveOnboardingUser(
+        trimmedName,
+        dateOfBirth,
+        placeOfBirth.trim(),
+        timeOfBirth.trim()
+      )
+    ) {
       startCalculation(getInitData(), {
         dateOfBirth,
         placeOfBirth: placeOfBirth.trim(),
+        timeOfBirth: timeOfBirth.trim() || undefined,
       });
       onComplete?.();
     } else {
@@ -154,6 +169,30 @@ export default function Onboarding({ onBack, onComplete }) {
                 onChange={(e) => setDateOfBirth(e.target.value)}
                 max={new Date().toISOString().slice(0, 10)}
               />
+            </label>
+            <label
+              className="review-label"
+              style={{ marginTop: "16px" }}
+            >
+              <span className="subtitle">Время рождения</span>
+              <input
+                type="time"
+                className="review-textarea onboarding-input"
+                value={timeOfBirth}
+                onChange={(e) => setTimeOfBirth(e.target.value)}
+              />
+              <span
+                className="subtitle"
+                style={{
+                  fontSize: "12px",
+                  color: "var(--color-text-muted)",
+                  marginTop: "4px",
+                  display: "block",
+                }}
+              >
+                Нужно для точного расчёта асцендента и натальной карты. Если не
+                знаешь — оставь пустым.
+              </span>
             </label>
             <label
               className="review-label"

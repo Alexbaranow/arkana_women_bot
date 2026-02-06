@@ -32,6 +32,14 @@ export default function App() {
     goTo(ScreenId.PROFILE);
   };
 
+  const resetStorage = () => {
+    try {
+      localStorage.removeItem("arkana_user");
+      localStorage.removeItem("arkana_natal_result");
+      window.location.reload();
+    } catch {}
+  };
+
   return (
     <>
       {isCalculating && (
@@ -54,30 +62,41 @@ export default function App() {
             <span className="logo logo-small">🔮</span>
             <span className="app-topbar-title">Женский Аркан</span>
           </div>
-          <button
-            type="button"
-            className="app-profile-btn"
-            onClick={openProfile}
-            aria-label="Личный кабинет"
-          >
-            <svg
-              className="app-profile-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden
+          <div className="app-topbar-right">
+            <button
+              type="button"
+              className="app-profile-btn app-debug-btn"
+              onClick={resetStorage}
+              aria-label="Сбросить данные (отладка)"
+              title="Сбросить все данные"
             >
-              <circle
-                cx="12"
-                cy="8"
-                r="3.2"
-              />
-              <path d="M5 20.5c0-3.5 3.1-6 7-6s7 2.5 7 6" />
-            </svg>
-          </button>
+              ↺
+            </button>
+            <button
+              type="button"
+              className="app-profile-btn"
+              onClick={openProfile}
+              aria-label="Личный кабинет"
+            >
+              <svg
+                className="app-profile-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <circle
+                  cx="12"
+                  cy="8"
+                  r="3.2"
+                />
+                <path d="M5 20.5c0-3.5 3.1-6 7-6s7 2.5 7 6" />
+              </svg>
+            </button>
+          </div>
         </header>
       )}
       {justCalculated && currentScreen !== ScreenId.PROFILE && (

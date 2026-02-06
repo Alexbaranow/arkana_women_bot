@@ -45,7 +45,7 @@ export default function MainMenu({ onNavigate }) {
             className="menu-card"
             onClick={() => onNavigate(ScreenId.ALL_SPREADS)}
             data-aos="fade-up"
-            data-aos-delay="120"
+            data-aos-delay="150"
           >
             <span className="menu-icon">📋</span>
             <div className="menu-text">
@@ -53,28 +53,32 @@ export default function MainMenu({ onNavigate }) {
             </div>
           </button>
           <button
-            className="menu-card menu-card-paid"
-            onClick={() => onNavigate("card-3days")}
+            className="menu-card"
+            onClick={() => onNavigate(ScreenId.NUMEROLOGY)}
             data-aos="fade-up"
-            data-aos-delay="150"
+            data-aos-delay="120"
+          >
+            <span className="menu-icon">🔢</span>
+            <div className="menu-text">
+              <span className="menu-title">Нумерология</span>
+              <span className="menu-desc">матрица судьбы, натальная карта</span>
+            </div>
+          </button>
+          <button
+            className="menu-card menu-card-paid"
+            onClick={() =>
+              isUserRegistered()
+                ? onNavigate("card-3days")
+                : onNavigate(ScreenId.ONBOARDING, { next: "card-3days" })
+            }
+            data-aos="fade-up"
+            data-aos-delay="180"
           >
             <span className="menu-icon">🪙</span>
             <div className="menu-text">
               <span className="menu-title">Карта дня на 3 дня</span>
             </div>
             <span className="menu-price">100 ₽</span>
-          </button>
-          <button
-            className="menu-card"
-            onClick={() => onNavigate("fate-matrix")}
-            data-aos="fade-up"
-            data-aos-delay="180"
-          >
-            <span className="menu-icon">🌌</span>
-            <div className="menu-text">
-              <span className="menu-title">Матрица судьбы</span>
-              <span className="menu-desc">по дате рождения</span>
-            </div>
           </button>
           <button
             className="menu-card"

@@ -66,7 +66,7 @@ app.post("/api/free-question", async (req, res) => {
 });
 
 function validateNatalRequest(req, res) {
-  const { initData, dateOfBirth, placeOfBirth } = req.body || {};
+  const { initData, dateOfBirth, placeOfBirth, timeOfBirth } = req.body || {};
   const isDev = process.env.NODE_ENV !== "production";
 
   if (!dateOfBirth || !placeOfBirth) {
@@ -93,6 +93,10 @@ function validateNatalRequest(req, res) {
   return {
     dateOfBirth: String(dateOfBirth).trim(),
     placeOfBirth: String(placeOfBirth).trim(),
+    timeOfBirth:
+      timeOfBirth != null && String(timeOfBirth).trim()
+        ? String(timeOfBirth).trim()
+        : undefined,
   };
 }
 
@@ -103,7 +107,8 @@ app.post("/api/calculate-ascendant", async (req, res) => {
   try {
     const ascendant = await fetchAscendant(
       params.dateOfBirth,
-      params.placeOfBirth
+      params.placeOfBirth,
+      params.timeOfBirth
     );
     return res.json({ ok: true, ascendant });
   } catch (err) {
@@ -121,16 +126,15 @@ app.post("/api/calculate-natal-chart", async (req, res) => {
   try {
     const natalChart = await fetchNatalChart(
       params.dateOfBirth,
-      params.placeOfBirth
+      params.placeOfBirth,
+      params.timeOfBirth
     );
     return res.json({ ok: true, natalChart });
   } catch (err) {
     console.error("API calculate-natal-chart error:", err);
-    return res
-      .status(500)
-      .json({
-        error: err?.message || "Не удалось рассчитать натальную карту.",
-      });
+    return res.status(500).json({
+      error: err?.message || "Не удалось рассчитать натальную карту.",
+    });
   }
 });
 

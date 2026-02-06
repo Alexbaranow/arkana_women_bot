@@ -7,6 +7,7 @@ export const ScreenId = Object.freeze({
   PROFILE: "profile",
   ONBOARDING: "onboarding",
   FREE_TAROT: "freeTarot",
+  NUMEROLOGY: "numerology",
   ALL_SPREADS: "all-spreads",
   REVIEWS: "reviews",
   LEAVE_REVIEW: "leaveReview",
@@ -20,10 +21,11 @@ export const StubTitles = Object.freeze({
   "card-day": "Карта дня",
   "card-3days": "Карта дня на 3 дня",
   "three-cards": "Три карты",
-  relationship: "Расклад на отношения",
-  situation: "Расклад на ситуацию",
   "fate-matrix": "Матрица судьбы",
   "natal-chart": "Натальная карта",
+  "heart-present": "Сердце в настоящем",
+  "golden-flow": "Золотой поток",
+  "body-energy": "Энергия тела",
   "my-readings": "Мои расклады",
 });
 

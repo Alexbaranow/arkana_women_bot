@@ -3,6 +3,19 @@ import { useNatalChart } from "../context/NatalChartContext";
 import { getOnboardingUser, saveOnboardingUser } from "./Onboarding";
 import { getInitData } from "../utils/telegram";
 import { ScreenId } from "../constants/screens";
+import { getTarotCardImageForNatal } from "../constants/tarotCards";
+
+/**
+ * Рендерит строку с markdown-жирным (**текст**): разбивает по ** и чередует обычный текст и <strong>.
+ */
+function renderTextWithBold(text) {
+  if (typeof text !== "string" || !text) return null;
+  const parts = text.split(/\*\*(.*?)\*\*/g);
+  if (parts.length === 1) return text;
+  return parts.map((part, i) =>
+    i % 2 === 1 ? <strong key={i}>{part}</strong> : part
+  );
+}
 
 /** Парсит ascendant из объекта или JSON-строки */
 function parseAscendant(raw) {
@@ -67,6 +80,7 @@ export default function Profile({ onBack, onNavigate }) {
   const [showRecalcForm, setShowRecalcForm] = useState(false);
   const [recalcDate, setRecalcDate] = useState("");
   const [recalcPlace, setRecalcPlace] = useState("");
+  const [recalcTime, setRecalcTime] = useState("");
   const [recalcError, setRecalcError] = useState(null);
 
   useEffect(() => {
@@ -98,14 +112,17 @@ export default function Profile({ onBack, onNavigate }) {
       setRecalcError("Укажи место рождения (город или страна)");
       return;
     }
-    if (hasUser && (recalcDate || recalcPlace)) {
+    const timeOfBirth =
+      (recalcTime || user?.timeOfBirth || "").trim() || undefined;
+    if (hasUser && (recalcDate || recalcPlace || recalcTime !== undefined)) {
       saveOnboardingUser(
         user.name,
         recalcDate || user.dateOfBirth,
-        recalcPlace || user.placeOfBirth
+        recalcPlace || user.placeOfBirth,
+        recalcTime ?? user?.timeOfBirth ?? ""
       );
     }
-    startCalculation(getInitData(), { dateOfBirth, placeOfBirth });
+    startCalculation(getInitData(), { dateOfBirth, placeOfBirth, timeOfBirth });
   };
 
   return (
@@ -142,6 +159,7 @@ export default function Profile({ onBack, onNavigate }) {
               {user.dateOfBirth && (
                 <> · {new Date(user.dateOfBirth).toLocaleDateString("ru-RU")}</>
               )}
+              {user.timeOfBirth && <> · {user.timeOfBirth}</>}
             </p>
           )}
         </section>
@@ -185,10 +203,22 @@ export default function Profile({ onBack, onNavigate }) {
               >
                 <h2 className="profile-section-title">Натальная карта</h2>
                 <p className="profile-natal-text profile-natal-chart">
-                  {displayNatal.natalChart}
+                  {renderTextWithBold(displayNatal.natalChart)}
                 </p>
               </section>
             ) : null}
+            <section
+              className="profile-section card profile-tarot-card-debug"
+              data-aos="fade-up"
+              data-aos-delay="120"
+            >
+              <h2 className="profile-section-title">Карта Таро</h2>
+              <img
+                src={getTarotCardImageForNatal(displayNatal)}
+                alt="Карта Таро по расчёту"
+                className="profile-tarot-card-image"
+              />
+            </section>
             <div
               className="profile-natal-notice card"
               data-aos="fade-up"
@@ -232,6 +262,7 @@ export default function Profile({ onBack, onNavigate }) {
                 setShowRecalcForm(true);
                 setRecalcDate(user?.dateOfBirth || "");
                 setRecalcPlace(user?.placeOfBirth || "");
+                setRecalcTime(user?.timeOfBirth || "");
               }}
             >
               Повторный расчёт
@@ -250,6 +281,7 @@ export default function Profile({ onBack, onNavigate }) {
                   setShowRecalcForm(true);
                   setRecalcDate(user?.dateOfBirth || "");
                   setRecalcPlace(user?.placeOfBirth || "");
+                  setRecalcTime(user?.timeOfBirth || "");
                 }}
               >
                 Указать данные и рассчитать
@@ -267,6 +299,15 @@ export default function Profile({ onBack, onNavigate }) {
                     value={recalcDate || user?.dateOfBirth || ""}
                     onChange={(e) => setRecalcDate(e.target.value)}
                     max={new Date().toISOString().slice(0, 10)}
+                  />
+                </label>
+                <label className="review-label">
+                  <span className="subtitle">Время рождения</span>
+                  <input
+                    type="time"
+                    className="review-textarea onboarding-input"
+                    value={recalcTime || user?.timeOfBirth || ""}
+                    onChange={(e) => setRecalcTime(e.target.value)}
                   />
                 </label>
                 <label className="review-label">

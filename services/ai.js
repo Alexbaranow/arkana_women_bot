@@ -45,9 +45,9 @@ export async function getAnswer(userQuestion) {
   return content.trim();
 }
 
-const ASCENDANT_PROMPT = `Ты — астролог и специалист по Таро. По дате и месту рождения рассчитай символический асцендент. Ответь ТОЛЬКО валидным JSON с полями: "sign" (знак асцендента, например "Стрелец"), "description" (2–4 предложения о значении асцендента в контексте Таро, связь с арканами). Без вступления, только JSON.`;
+const ASCENDANT_PROMPT = `Ты — астролог и специалист по Таро. По дате, времени (если указано) и месту рождения рассчитай символический асцендент. Если в запросе есть время рождения — обязательно используй его для более точного расчёта асцендента. Ответь ТОЛЬКО валидным JSON с полями: "sign" (знак асцендента, например "Стрелец"), "description" (2–4 предложения о значении асцендента в контексте Таро, связь с арканами). Без вступления, только JSON.`;
 
-const NATAL_CHART_PROMPT = `Ты — астролог и специалист по Таро. По дате и месту рождения опиши натальную карту: 2–3 абзаца текста о ключевых арканах, энергиях и темах жизни. По-русски, тёплым тоном. Только текст, без JSON и вступлений.`;
+const NATAL_CHART_PROMPT = `Ты — астролог и специалист по Таро. По дате, времени (если указано) и месту рождения опиши натальную карту: 2–3 абзаца текста о ключевых арканах, энергиях и темах жизни. Если в запросе есть время рождения — используй его для более точной натальной карты. По-русски, тёплым тоном. Только текст, без JSON и вступлений.`;
 
 function extractTextFromChoice(choice) {
   const msg = choice?.message;
@@ -64,16 +64,22 @@ function extractTextFromChoice(choice) {
 /**
  * Парсит ответ нейросети в объект ascendant { sign, description }
  */
-export async function fetchAscendant(dateOfBirth, placeOfBirth, retry = false) {
+export async function fetchAscendant(
+  dateOfBirth,
+  placeOfBirth,
+  timeOfBirth,
+  retry = false
+) {
   const openai = getOpenAI();
   const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
+  const timePart = timeOfBirth ? ` Время рождения: ${timeOfBirth}.` : "";
   const completion = await openai.chat.completions.create({
     model,
     messages: [
       { role: "system", content: ASCENDANT_PROMPT },
       {
         role: "user",
-        content: `Дата рождения: ${dateOfBirth}. Место рождения: ${placeOfBirth}.`,
+        content: `Дата рождения: ${dateOfBirth}. Место рождения: ${placeOfBirth}.${timePart}`,
       },
     ],
     max_tokens: 800,
@@ -82,7 +88,7 @@ export async function fetchAscendant(dateOfBirth, placeOfBirth, retry = false) {
   let content = extractTextFromChoice(choice);
   if (!content && !retry) {
     await new Promise((r) => setTimeout(r, 1000));
-    return fetchAscendant(dateOfBirth, placeOfBirth, true);
+    return fetchAscendant(dateOfBirth, placeOfBirth, timeOfBirth, true);
   }
   if (!content) {
     const reason = choice?.finish_reason || "unknown";
@@ -128,26 +134,28 @@ export async function fetchAscendant(dateOfBirth, placeOfBirth, retry = false) {
 export async function fetchNatalChart(
   dateOfBirth,
   placeOfBirth,
+  timeOfBirth,
   retry = false
 ) {
   const openai = getOpenAI();
   const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
+  const timePart = timeOfBirth ? ` Время рождения: ${timeOfBirth}.` : "";
   const completion = await openai.chat.completions.create({
     model,
     messages: [
       { role: "system", content: NATAL_CHART_PROMPT },
       {
         role: "user",
-        content: `Дата рождения: ${dateOfBirth}. Место рождения: ${placeOfBirth}.`,
+        content: `Дата рождения: ${dateOfBirth}. Место рождения: ${placeOfBirth}.${timePart}`,
       },
     ],
-    max_tokens: 800,
+    max_tokens: 4096,
   });
   const choice = completion.choices[0];
   let content = extractTextFromChoice(choice);
   if (!content && !retry) {
     await new Promise((r) => setTimeout(r, 1000));
-    return fetchNatalChart(dateOfBirth, placeOfBirth, true);
+    return fetchNatalChart(dateOfBirth, placeOfBirth, timeOfBirth, true);
   }
   if (!content) {
     const reason = choice?.finish_reason || "unknown";
@@ -165,10 +173,14 @@ export async function fetchNatalChart(
  * @param {string} placeOfBirth - место рождения (город или страна)
  * @returns {Promise<{ ascendant: { sign, description }, natalChart: string }>}
  */
-export async function getAscendantAndNatalChart(dateOfBirth, placeOfBirth) {
+export async function getAscendantAndNatalChart(
+  dateOfBirth,
+  placeOfBirth,
+  timeOfBirth
+) {
   const [ascendant, natalChart] = await Promise.all([
-    fetchAscendant(dateOfBirth, placeOfBirth),
-    fetchNatalChart(dateOfBirth, placeOfBirth),
+    fetchAscendant(dateOfBirth, placeOfBirth, timeOfBirth),
+    fetchNatalChart(dateOfBirth, placeOfBirth, timeOfBirth),
   ]);
   return {
     ascendant,

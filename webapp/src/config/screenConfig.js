@@ -8,6 +8,7 @@ import Profile from "../screens/Profile";
 import Onboarding from "../screens/Onboarding";
 import FreeTarot from "../screens/FreeTarot";
 import AllSpreads from "../screens/AllSpreads";
+import Numerology from "../screens/Numerology";
 import Reviews from "../screens/Reviews";
 import Stub from "../screens/Stub";
 import LeaveReview from "../screens/LeaveReview";
@@ -52,6 +53,10 @@ export function createScreenRegistry(renderer, screenPayload = null) {
     [ScreenId.FREE_TAROT]: {
       component: FreeTarot,
       getProps: () => ({ onBack: goBack }),
+    },
+    [ScreenId.NUMEROLOGY]: {
+      component: Numerology,
+      getProps: () => ({ onBack: goBack, onNavigate: goTo }),
     },
     [ScreenId.ALL_SPREADS]: {
       component: AllSpreads,

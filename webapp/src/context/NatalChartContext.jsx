@@ -23,7 +23,7 @@ export function NatalChartProvider({ children }) {
   const [natalResult, setNatalResult] = useState(getNatalResultFromStorage);
 
   const startCalculation = useCallback(
-    async (initData, { dateOfBirth, placeOfBirth }) => {
+    async (initData, { dateOfBirth, placeOfBirth, timeOfBirth }) => {
       if (!dateOfBirth || !placeOfBirth) return;
       setIsCalculating(true);
       setJustCalculated(false);
@@ -31,6 +31,7 @@ export function NatalChartProvider({ children }) {
         initData: initData || undefined,
         dateOfBirth,
         placeOfBirth: placeOfBirth.trim(),
+        ...(timeOfBirth && { timeOfBirth: String(timeOfBirth).trim() }),
       };
       const opts = {
         method: "POST",
