@@ -240,7 +240,7 @@ export default function Profile({ onBack, onNavigate }) {
               <button
                 type="button"
                 className="btn btn-outline profile-natal-notice-btn"
-                onClick={() => onNavigate(ScreenId.ALL_SPREADS)}
+                onClick={() => onNavigate("natal-chart")}
               >
                 Все расклады → Натальная карта
               </button>
