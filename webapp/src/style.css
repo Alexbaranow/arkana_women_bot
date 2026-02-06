@@ -754,6 +754,15 @@ input[type="date"] {
   border-color: var(--color-primary);
 }
 
+/* Кнопка-триггер для открытия мобильного пикера (выглядит как поле ввода) */
+.profile-recalc-trigger {
+  cursor: pointer;
+  text-align: left;
+  appearance: none;
+  background: white;
+  color: inherit;
+}
+
 .profile-recalc-btn {
   margin-top: 4px;
 }

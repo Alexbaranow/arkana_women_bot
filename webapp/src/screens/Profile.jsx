@@ -1,9 +1,31 @@
 import { useEffect, useState, useMemo, useRef } from "react";
+import DatePicker from "react-mobile-datepicker";
+import "react-mobile-datepicker/lib/index.css";
 import { useNatalChart } from "../context/NatalChartContext";
 import { getOnboardingUser, saveOnboardingUser } from "./Onboarding";
 import { getInitData } from "../utils/telegram";
 import { ScreenId } from "../constants/screens";
 import { getTarotCardImageForNatal } from "../constants/tarotCards";
+
+const MONTH_NAMES_RU = [
+  "Янв", "Фев", "Мар", "Апр", "Май", "Июн",
+  "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек",
+];
+
+const dateConfigDate = {
+  year: { format: "YYYY", caption: "Год", step: 1 },
+  month: {
+    format: (value) => MONTH_NAMES_RU[value.getMonth()],
+    caption: "Мес",
+    step: 1,
+  },
+  date: { format: "D", caption: "День", step: 1 },
+};
+
+const dateConfigTime = {
+  hour: { format: "hh", caption: "Час", step: 1 },
+  minute: { format: "mm", caption: "Мин", step: 1 },
+};
 
 /**
  * Рендерит строку с markdown-жирным (**текст**): разбивает по ** и чередует обычный текст и <strong>.
@@ -56,6 +78,40 @@ function toTimeInputValue(str) {
   return s;
 }
 
+/** Строку даты (YYYY-MM-DD) в Date для пикера; иначе сегодня. */
+function parseDateForPicker(str) {
+  const s = toDateInputValue(str || "");
+  if (!s) return new Date();
+  const d = new Date(s + "T12:00:00");
+  return Number.isNaN(d.getTime()) ? new Date() : d;
+}
+
+/** Строку времени (HH:mm) в Date (сегодня + время) для пикера; иначе полдень. */
+function parseTimeForPicker(str) {
+  const s = toTimeInputValue(str || "");
+  if (!s) return new Date(new Date().setHours(12, 0, 0, 0));
+  const [h, m] = s.split(":").map(Number);
+  const d = new Date();
+  d.setHours(Number.isNaN(h) ? 12 : h, Number.isNaN(m) ? 0 : m, 0, 0);
+  return d;
+}
+
+/** Формат даты для отображения в триггере: "6 окт. 1992" */
+function formatDateDisplay(str) {
+  const d = parseDateForPicker(str);
+  const day = d.getDate();
+  const month = MONTH_NAMES_RU[d.getMonth()];
+  const year = d.getFullYear();
+  return `${day} ${month}. ${year} г.`;
+}
+
+/** Формат времени для отображения: "16:01" */
+function formatTimeDisplay(str) {
+  const s = toTimeInputValue(str || "");
+  if (!s) return "";
+  return s;
+}
+
 /** Извлекает читаемые данные для отображения: если сохранён сырой JSON — парсим и показываем только нужное */
 function getDisplayNatal(natalResult) {
   if (!natalResult) return null;
@@ -101,6 +157,7 @@ export default function Profile({ onBack, onNavigate }) {
   const [recalcPlace, setRecalcPlace] = useState("");
   const [recalcTime, setRecalcTime] = useState("");
   const [recalcError, setRecalcError] = useState(null);
+  const [pickerOpen, setPickerOpen] = useState(null); // 'date' | 'time' | null
 
   const prevCalculating = useRef(isCalculating);
 
@@ -322,21 +379,62 @@ export default function Profile({ onBack, onNavigate }) {
               <div className="profile-recalc-fields">
                 <label className="review-label">
                   <span className="subtitle">Дата рождения</span>
-                  <input
-                    type="date"
-                    className="profile-recalc-input"
-                    value={recalcDate || toDateInputValue(user?.dateOfBirth) || ""}
-                    onChange={(e) => setRecalcDate(e.target.value)}
-                    max={new Date().toISOString().slice(0, 10)}
+                  <button
+                    type="button"
+                    className="profile-recalc-input profile-recalc-trigger"
+                    onClick={() => setPickerOpen("date")}
+                  >
+                    {recalcDate || toDateInputValue(user?.dateOfBirth)
+                      ? formatDateDisplay(recalcDate || user?.dateOfBirth)
+                      : "Выберите дату"}
+                  </button>
+                  <DatePicker
+                    isOpen={pickerOpen === "date"}
+                    theme="ios"
+                    value={parseDateForPicker(recalcDate || user?.dateOfBirth)}
+                    min={new Date(1900, 0, 1)}
+                    max={new Date()}
+                    dateConfig={dateConfigDate}
+                    showCaption
+                    confirmText="Готово"
+                    cancelText="Отмена"
+                    onSelect={(date) => {
+                      setRecalcDate(toDateInputValue(date.toISOString().slice(0, 10)));
+                      setPickerOpen(null);
+                    }}
+                    onCancel={() => setPickerOpen(null)}
                   />
                 </label>
                 <label className="review-label">
                   <span className="subtitle">Время рождения</span>
-                  <input
-                    type="time"
-                    className="profile-recalc-input"
-                    value={recalcTime || toTimeInputValue(user?.timeOfBirth) || ""}
-                    onChange={(e) => setRecalcTime(e.target.value)}
+                  <button
+                    type="button"
+                    className="profile-recalc-input profile-recalc-trigger"
+                    onClick={() => setPickerOpen("time")}
+                  >
+                    {recalcTime || toTimeInputValue(user?.timeOfBirth)
+                      ? formatTimeDisplay(recalcTime || user?.timeOfBirth)
+                      : "Выберите время"}
+                  </button>
+                  <DatePicker
+                    isOpen={pickerOpen === "time"}
+                    theme="ios"
+                    value={parseTimeForPicker(recalcTime || user?.timeOfBirth)}
+                    min={new Date(2000, 0, 1, 0, 0, 0)}
+                    max={new Date(2000, 0, 1, 23, 59, 0)}
+                    dateConfig={dateConfigTime}
+                    showCaption
+                    confirmText="Готово"
+                    cancelText="Отмена"
+                    onSelect={(date) => {
+                      const h = date.getHours();
+                      const m = date.getMinutes();
+                      setRecalcTime(
+                        `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`
+                      );
+                      setPickerOpen(null);
+                    }}
+                    onCancel={() => setPickerOpen(null)}
                   />
                 </label>
                 <label className="review-label">
