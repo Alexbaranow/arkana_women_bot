@@ -1,6 +1,21 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { getInitData } from "../utils/telegram";
 import { useNatalChart } from "../context/NatalChartContext";
+
+/** В поле даты — только цифры и разделители . / - */
+function filterDateInput(value) {
+  return value.replace(/[^\d./\-]/g, "");
+}
+
+/** В поле времени — только цифры и : . */
+function filterTimeInput(value) {
+  return value.replace(/[^\d.:]/g, "");
+}
+
+/** В текстовых полях (имя, место) — только буквы, пробелы и дефис */
+function filterLettersInput(value) {
+  return value.replace(/[^\p{L}\s\-]/gu, "");
+}
 
 /** Парсит ввод пользователя (ДД.ММ.ГГГГ, ДД/ММ/ГГГГ, ГГГГ-ММ-ДД) в YYYY-MM-DD */
 function parseUserDateInput(str) {
@@ -115,45 +130,60 @@ export default function Onboarding({ onBack, onComplete }) {
   const [name, setName] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [timeOfBirth, setTimeOfBirth] = useState("");
+  const [timeUnknown, setTimeUnknown] = useState(false);
   const [placeOfBirth, setPlaceOfBirth] = useState("");
   const [error, setError] = useState(null);
+  const [fieldErrors, setFieldErrors] = useState({});
+  const nameRef = useRef(null);
+  const dateRef = useRef(null);
+  const timeRef = useRef(null);
+  const placeRef = useRef(null);
+
+  useEffect(() => {
+    const order = ["name", "dateOfBirth", "timeOfBirth", "placeOfBirth"];
+    const firstKey = order.find((key) => fieldErrors[key]);
+    if (!firstKey) return;
+    const refMap = { name: nameRef, dateOfBirth: dateRef, timeOfBirth: timeRef, placeOfBirth: placeRef };
+    const ref = refMap[firstKey];
+    ref?.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    setTimeout(() => ref?.current?.focus(), 300);
+  }, [fieldErrors]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     setError(null);
     const trimmedName = name.trim();
-    if (!trimmedName) {
-      setError("Введи, пожалуйста, как к тебе обращаться");
-      return;
-    }
     const savedDate = parseUserDateInput(dateOfBirth);
-    if (!savedDate) {
-      setError("Укажи дату рождения (например 16.02.1992)");
+    const date = savedDate ? new Date(savedDate) : null;
+    const trimmedPlace = placeOfBirth.trim();
+
+    const errors = {};
+    if (!trimmedName) errors.name = true;
+    if (!savedDate || !date || Number.isNaN(date.getTime()) || date > new Date()) {
+      errors.dateOfBirth = true;
+    }
+    if (!timeUnknown && timeOfBirth.trim() && !parseUserTimeInput(timeOfBirth)) {
+      errors.timeOfBirth = true;
+    }
+    if (!trimmedPlace) errors.placeOfBirth = true;
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      if (errors.name) setError("Введи, пожалуйста, как к тебе обращаться");
+      else if (errors.dateOfBirth) setError("Укажи дату рождения (например 16.02.1992)");
+      else if (errors.timeOfBirth) setError("Время укажи в формате ЧЧ:ММ (например 16:30)");
+      else setError("Укажи место рождения (город или страна)");
       return;
     }
-    const date = new Date(savedDate);
-    if (Number.isNaN(date.getTime()) || date > new Date()) {
-      setError("Проверь дату рождения");
-      return;
-    }
-    if (!placeOfBirth.trim()) {
-      setError(
-        "Укажи место рождения (город или страна) — нужно для расчёта асцендента"
-      );
-      return;
-    }
-    const savedTime = parseUserTimeInput(timeOfBirth);
+
+    setFieldErrors({});
+    const savedTime = timeUnknown ? "" : parseUserTimeInput(timeOfBirth);
     if (
-      saveOnboardingUser(
-        trimmedName,
-        savedDate,
-        placeOfBirth.trim(),
-        savedTime
-      )
+      saveOnboardingUser(trimmedName, savedDate, trimmedPlace, savedTime)
     ) {
       startCalculation(getInitData(), {
         dateOfBirth: savedDate,
-        placeOfBirth: placeOfBirth.trim(),
+        placeOfBirth: trimmedPlace,
         timeOfBirth: savedTime || undefined,
       });
       onComplete?.();
@@ -198,13 +228,26 @@ export default function Onboarding({ onBack, onComplete }) {
               точного прогноза ✨ Асцендент и натальную карту можно будет
               рассчитать или пересчитать в личном кабинете в любое время.
             </p>
+            {error && (
+              <p
+                className="free-tarot-error"
+                role="alert"
+                style={{ marginBottom: "12px" }}
+              >
+                {error}
+              </p>
+            )}
             <label className="review-label">
               <span className="subtitle">Как к тебе обращаться?</span>
               <input
+                ref={nameRef}
                 type="text"
-                className="review-textarea onboarding-input"
+                className={`review-textarea onboarding-input ${fieldErrors.name ? "input-invalid" : ""}`}
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => {
+                  setName(filterLettersInput(e.target.value));
+                  if (fieldErrors.name) setFieldErrors((p) => ({ ...p, name: false }));
+                }}
                 placeholder="Имя"
                 autoComplete="name"
               />
@@ -215,10 +258,14 @@ export default function Onboarding({ onBack, onComplete }) {
             >
               <span className="subtitle">Дата рождения</span>
               <input
+                ref={dateRef}
                 type="text"
-                className="review-textarea onboarding-input"
+                className={`review-textarea onboarding-input ${fieldErrors.dateOfBirth ? "input-invalid" : ""}`}
                 value={/^\d{4}-\d{2}-\d{2}$/.test(dateOfBirth) ? formatDateForInput(dateOfBirth) : dateOfBirth}
-                onChange={(e) => setDateOfBirth(e.target.value)}
+                onChange={(e) => {
+                  setDateOfBirth(filterDateInput(e.target.value));
+                  if (fieldErrors.dateOfBirth) setFieldErrors((p) => ({ ...p, dateOfBirth: false }));
+                }}
                 placeholder="ДД.ММ.ГГГГ (например 16.02.1992)"
                 autoComplete="bday"
               />
@@ -228,14 +275,36 @@ export default function Onboarding({ onBack, onComplete }) {
               style={{ marginTop: "16px" }}
             >
               <span className="subtitle">Время рождения</span>
-              <input
-                type="text"
-                className="review-textarea onboarding-input"
-                value={timeOfBirth}
-                onChange={(e) => setTimeOfBirth(e.target.value)}
-                placeholder="ЧЧ:ММ или пусто (например 16:30)"
-                autoComplete="off"
-              />
+              {!timeUnknown && (
+                <input
+                  ref={timeRef}
+                  type="text"
+                  className={`review-textarea onboarding-input ${fieldErrors.timeOfBirth ? "input-invalid" : ""}`}
+                  value={timeOfBirth}
+                  onChange={(e) => {
+                    setTimeOfBirth(filterTimeInput(e.target.value));
+                    if (fieldErrors.timeOfBirth) setFieldErrors((p) => ({ ...p, timeOfBirth: false }));
+                  }}
+                  placeholder="ЧЧ:ММ (например 16:30)"
+                  autoComplete="off"
+                />
+              )}
+              <label className="onboarding-checkbox-label">
+                <input
+                  type="checkbox"
+                  className="onboarding-checkbox"
+                  checked={timeUnknown}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setTimeUnknown(checked);
+                    if (checked) {
+                      setTimeOfBirth("");
+                      setFieldErrors((p) => ({ ...p, timeOfBirth: false }));
+                    }
+                  }}
+                />
+                <span className="onboarding-checkbox-text">Не знаю</span>
+              </label>
               <span
                 className="subtitle"
                 style={{
@@ -245,8 +314,7 @@ export default function Onboarding({ onBack, onComplete }) {
                   display: "block",
                 }}
               >
-                Нужно для точного расчёта асцендента и натальной карты. Если не
-                знаешь — оставь пустым.
+                Нужно для точного расчёта асцендента и натальной карты.
               </span>
             </label>
             <label
@@ -257,28 +325,22 @@ export default function Onboarding({ onBack, onComplete }) {
                 Место рождения (город или страна)
               </span>
               <input
+                ref={placeRef}
                 type="text"
-                className="review-textarea onboarding-input"
+                className={`review-textarea onboarding-input ${fieldErrors.placeOfBirth ? "input-invalid" : ""}`}
                 value={placeOfBirth}
-                onChange={(e) => setPlaceOfBirth(e.target.value)}
+                onChange={(e) => {
+                  setPlaceOfBirth(filterLettersInput(e.target.value));
+                  if (fieldErrors.placeOfBirth) setFieldErrors((p) => ({ ...p, placeOfBirth: false }));
+                }}
                 placeholder="Например: Москва или Россия"
                 autoComplete="off"
               />
             </label>
-            {error && (
-              <p
-                className="free-tarot-error"
-                role="alert"
-                style={{ marginTop: "12px" }}
-              >
-                {error}
-              </p>
-            )}
           </div>
           <button
             type="submit"
             className="btn btn-primary"
-            disabled={!name.trim() || !parseUserDateInput(dateOfBirth) || !placeOfBirth.trim()}
             data-aos="fade-up"
             data-aos-delay="150"
           >
