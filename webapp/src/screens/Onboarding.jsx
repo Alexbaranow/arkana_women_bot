@@ -1,64 +1,54 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { getInitData } from "../utils/telegram";
 import { useNatalChart } from "../context/NatalChartContext";
 
-const MONTH_NAMES_RU = [
-  "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
-  "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь",
-];
+/** Парсит ввод пользователя (ДД.ММ.ГГГГ, ДД/ММ/ГГГГ, ГГГГ-ММ-ДД) в YYYY-MM-DD */
+function parseUserDateInput(str) {
+  if (!str || typeof str !== "string") return "";
+  const s = str.trim().replace(/\s+/g, " ");
+  if (!s) return "";
+  if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(s)) {
+    const d = new Date(s);
+    if (!Number.isNaN(d.getTime())) return d.toISOString().slice(0, 10);
+  }
+  const parts = s.split(/[.\-/]/).map((p) => p.trim()).filter(Boolean);
+  if (parts.length !== 3) return "";
+  let day, month, year;
+  if (parts[0].length === 4 && parts[1].length <= 2 && parts[2].length <= 2) {
+    year = parseInt(parts[0], 10);
+    month = parseInt(parts[1], 10);
+    day = parseInt(parts[2], 10);
+  } else if (parts[2].length === 4 && parts[0].length <= 2 && parts[1].length <= 2) {
+    day = parseInt(parts[0], 10);
+    month = parseInt(parts[1], 10);
+    year = parseInt(parts[2], 10);
+  } else return "";
+  if (Number.isNaN(day) || Number.isNaN(month) || Number.isNaN(year)) return "";
+  const date = new Date(year, month - 1, day);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toISOString().slice(0, 10);
+}
 
-const CURRENT_YEAR = new Date().getFullYear();
-const MIN_YEAR = 1920;
-const YEARS = Array.from({ length: CURRENT_YEAR - MIN_YEAR + 1 }, (_, i) => CURRENT_YEAR - i);
-const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
-const MONTHS = MONTH_NAMES_RU.map((name, i) => ({ value: i + 1, name }));
-const HOURS = Array.from({ length: 24 }, (_, i) => i);
-const MINUTES = Array.from({ length: 60 }, (_, i) => i);
-
-function toDateInputValue(str) {
+/** YYYY-MM-DD → ДД.ММ.ГГГГ для отображения в поле */
+function formatDateForInput(str) {
   if (!str || typeof str !== "string") return "";
   const s = str.trim();
-  if (!s) return "";
-  const d = new Date(s);
-  if (Number.isNaN(d.getTime())) return s;
-  return d.toISOString().slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const [y, m, d] = s.split("-");
+  return `${d}.${m}.${y}`;
 }
 
-/** Парсит YYYY-MM-DD в { day, month, year } (month 1-12) */
-function parseDateParts(str) {
-  const s = toDateInputValue(str || "");
-  if (!s) return { day: "", month: "", year: "" };
-  const [y, m, d] = s.split("-").map(Number);
-  if (Number.isNaN(y) || Number.isNaN(m) || Number.isNaN(d)) return { day: "", month: "", year: "" };
-  return { day: d, month: m, year: y };
-}
-
-/** Собирает day, month, year в YYYY-MM-DD */
-function toDateString(day, month, year) {
-  if (day === "" || month === "" || year === "") return "";
-  const d = Number(day);
-  const m = Number(month);
-  const y = Number(year);
-  if (Number.isNaN(d) || Number.isNaN(m) || Number.isNaN(y)) return "";
-  const date = new Date(y, m - 1, d);
-  if (Number.isNaN(date.getTime())) return "";
-  return `${String(y).padStart(4, "0")}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-}
-
-/** Парсит HH:mm в { hour, minute }; пустая строка = не указано */
-function parseTimeParts(str) {
-  if (str == null || String(str).trim() === "") return { hour: "", minute: "" };
+/** Парсит ввод времени (ЧЧ:ММ, ЧЧ.ММ, ЧЧ ММ) в HH:mm */
+function parseUserTimeInput(str) {
+  if (str == null || typeof str !== "string") return "";
   const s = String(str).trim();
-  if (!/^\d{1,2}:\d{2}$/.test(s)) return { hour: "", minute: "" };
-  const [h, m] = s.split(":").map(Number);
-  return { hour: h, minute: m };
-}
-
-function toTimeString(hour, minute) {
-  if (hour === "") return "";
-  const h = Number(hour);
-  const m = minute === "" ? 0 : Number(minute);
-  if (Number.isNaN(h) || Number.isNaN(m)) return "";
+  if (!s) return "";
+  const normalized = s.replace(".", ":").replace(/\s+/, ":");
+  const match = normalized.match(/^(\d{1,2}):(\d{1,2})$/);
+  if (!match) return "";
+  const h = parseInt(match[1], 10);
+  const m = parseInt(match[2], 10);
+  if (h < 0 || h > 23 || m < 0 || m > 59) return "";
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
@@ -128,9 +118,6 @@ export default function Onboarding({ onBack, onComplete }) {
   const [placeOfBirth, setPlaceOfBirth] = useState("");
   const [error, setError] = useState(null);
 
-  const dateParts = useMemo(() => parseDateParts(dateOfBirth), [dateOfBirth]);
-  const timeParts = useMemo(() => parseTimeParts(timeOfBirth), [timeOfBirth]);
-
   const handleSubmit = (e) => {
     e.preventDefault();
     setError(null);
@@ -139,12 +126,12 @@ export default function Onboarding({ onBack, onComplete }) {
       setError("Введи, пожалуйста, как к тебе обращаться");
       return;
     }
-    const dateStr = toDateInputValue(dateOfBirth) || dateOfBirth;
-    if (!dateStr) {
-      setError("Укажи дату рождения");
+    const savedDate = parseUserDateInput(dateOfBirth);
+    if (!savedDate) {
+      setError("Укажи дату рождения (например 16.02.1992)");
       return;
     }
-    const date = new Date(dateStr);
+    const date = new Date(savedDate);
     if (Number.isNaN(date.getTime()) || date > new Date()) {
       setError("Проверь дату рождения");
       return;
@@ -155,19 +142,19 @@ export default function Onboarding({ onBack, onComplete }) {
       );
       return;
     }
-    const savedDate = toDateInputValue(dateOfBirth) || dateOfBirth;
+    const savedTime = parseUserTimeInput(timeOfBirth);
     if (
       saveOnboardingUser(
         trimmedName,
         savedDate,
         placeOfBirth.trim(),
-        timeOfBirth.trim()
+        savedTime
       )
     ) {
       startCalculation(getInitData(), {
         dateOfBirth: savedDate,
         placeOfBirth: placeOfBirth.trim(),
-        timeOfBirth: timeOfBirth.trim() || undefined,
+        timeOfBirth: savedTime || undefined,
       });
       onComplete?.();
     } else {
@@ -227,86 +214,28 @@ export default function Onboarding({ onBack, onComplete }) {
               style={{ marginTop: "16px" }}
             >
               <span className="subtitle">Дата рождения</span>
-              <div className="onboarding-date-row">
-                <select
-                  className="onboarding-select"
-                  value={dateParts.day}
-                  onChange={(e) => {
-                    const day = e.target.value === "" ? "" : Number(e.target.value);
-                    setDateOfBirth(toDateString(day, dateParts.month, dateParts.year));
-                  }}
-                  aria-label="День"
-                >
-                  <option value="">День</option>
-                  {DAYS.map((d) => (
-                    <option key={d} value={d}>{d}</option>
-                  ))}
-                </select>
-                <select
-                  className="onboarding-select"
-                  value={dateParts.month}
-                  onChange={(e) => {
-                    const month = e.target.value === "" ? "" : Number(e.target.value);
-                    setDateOfBirth(toDateString(dateParts.day, month, dateParts.year));
-                  }}
-                  aria-label="Месяц"
-                >
-                  <option value="">Месяц</option>
-                  {MONTHS.map(({ value, name }) => (
-                    <option key={value} value={value}>{name}</option>
-                  ))}
-                </select>
-                <select
-                  className="onboarding-select"
-                  value={dateParts.year}
-                  onChange={(e) => {
-                    const year = e.target.value === "" ? "" : Number(e.target.value);
-                    setDateOfBirth(toDateString(dateParts.day, dateParts.month, year));
-                  }}
-                  aria-label="Год"
-                >
-                  <option value="">Год</option>
-                  {YEARS.map((y) => (
-                    <option key={y} value={y}>{y}</option>
-                  ))}
-                </select>
-              </div>
+              <input
+                type="text"
+                className="review-textarea onboarding-input"
+                value={/^\d{4}-\d{2}-\d{2}$/.test(dateOfBirth) ? formatDateForInput(dateOfBirth) : dateOfBirth}
+                onChange={(e) => setDateOfBirth(e.target.value)}
+                placeholder="ДД.ММ.ГГГГ (например 16.02.1992)"
+                autoComplete="bday"
+              />
             </label>
             <label
               className="review-label"
               style={{ marginTop: "16px" }}
             >
               <span className="subtitle">Время рождения</span>
-              <div className="onboarding-date-row">
-                <select
-                  className="onboarding-select"
-                  value={timeParts.hour}
-                  onChange={(e) => {
-                    const hour = e.target.value === "" ? "" : Number(e.target.value);
-                    setTimeOfBirth(toTimeString(hour, timeParts.minute));
-                  }}
-                  aria-label="Час"
-                >
-                  <option value="">—</option>
-                  {HOURS.map((h) => (
-                    <option key={h} value={h}>{String(h).padStart(2, "0")}</option>
-                  ))}
-                </select>
-                <select
-                  className="onboarding-select"
-                  value={timeParts.minute}
-                  onChange={(e) => {
-                    const minute = e.target.value === "" ? "" : Number(e.target.value);
-                    setTimeOfBirth(toTimeString(timeParts.hour, minute));
-                  }}
-                  aria-label="Минута"
-                >
-                  <option value="">—</option>
-                  {MINUTES.map((m) => (
-                    <option key={m} value={m}>{String(m).padStart(2, "0")}</option>
-                  ))}
-                </select>
-              </div>
+              <input
+                type="text"
+                className="review-textarea onboarding-input"
+                value={timeOfBirth}
+                onChange={(e) => setTimeOfBirth(e.target.value)}
+                placeholder="ЧЧ:ММ или пусто (например 16:30)"
+                autoComplete="off"
+              />
               <span
                 className="subtitle"
                 style={{
@@ -349,7 +278,7 @@ export default function Onboarding({ onBack, onComplete }) {
           <button
             type="submit"
             className="btn btn-primary"
-            disabled={!name.trim() || !dateOfBirth || !placeOfBirth.trim()}
+            disabled={!name.trim() || !parseUserDateInput(dateOfBirth) || !placeOfBirth.trim()}
             data-aos="fade-up"
             data-aos-delay="150"
           >
