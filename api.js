@@ -234,7 +234,9 @@ app.post("/api/request-stars-invoice", async (req, res) => {
         "В чат с ботом отправлен счёт. Перейди в диалог с ботом и нажми «Оплатить».",
     });
   } catch (err) {
-    console.error("sendInvoice error:", err?.message);
+    const code = err?.error_code ?? err?.error?.error_code;
+    const desc = err?.description ?? err?.error?.description ?? err?.message;
+    console.error("sendInvoice error:", desc, "code:", code, "full:", err?.response?.body ?? err?.payload ?? "");
     return res.status(500).json({
       error: "Не удалось отправить счёт. Попробуй позже или оплати картой.",
     });
