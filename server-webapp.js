@@ -11,6 +11,9 @@ import { config } from "dotenv";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 config({ path: join(__dirname, ".env") });
 
+console.log("[startup] BOT_TOKEN:", process.env.BOT_TOKEN ? "***задан***" : "НЕТ");
+console.log("[startup] WEBAPP_URL:", process.env.WEBAPP_URL || "(не задан)");
+
 import express from "express";
 import app from "./api.js";
 import { bot, setupCommands } from "./botInstance.js";
@@ -51,6 +54,11 @@ app.listen(PORT, () => {
   } catch (e) {
     console.warn("[bot] setMyCommands failed:", e?.message);
   }
-  await bot.start();
-  console.log("🔮 Бот запущен (оплата Stars доступна)");
+  try {
+    await bot.start();
+    console.log("🔮 Бот запущен (оплата Stars доступна)");
+  } catch (e) {
+    console.error("[bot] Не удалось запустить бота:", e?.message || e);
+    process.exitCode = 1;
+  }
 })();
