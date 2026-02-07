@@ -14,6 +14,7 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
 COPY api.js server-webapp.js db.js ./
+COPY config ./config
 COPY services ./services
 COPY --from=webapp-builder /app/webapp/dist ./webapp/dist
 
