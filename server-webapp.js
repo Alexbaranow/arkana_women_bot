@@ -1,5 +1,6 @@
 /**
- * Сервер для деплоя: раздаёт веб-приложение (UI) + API /api/free-question.
+ * Сервер для деплоя: раздаёт веб-приложение (UI) + API (включая оплату Stars).
+ * Бот и API работают одним процессом — оплата Stars доступна.
  * Запускается в Docker на хосте.
  */
 import { fileURLToPath } from "url";
@@ -12,9 +13,13 @@ config({ path: join(__dirname, ".env") });
 
 import express from "express";
 import app from "./api.js";
+import { bot, setupCommands } from "./botInstance.js";
 
 const PORT = Number(process.env.PORT) || 8080;
 const staticDir = join(__dirname, "webapp", "dist");
+
+// Передаём бота в API — иначе оплата Stars недоступна
+app.set("bot", bot);
 
 // Проверка живости для nginx / мониторинга
 app.get("/health", (req, res) => {
@@ -38,3 +43,14 @@ if (!existsSync(staticDir)) {
 app.listen(PORT, () => {
   console.log(`🌐 UI + API: http://0.0.0.0:${PORT}`);
 });
+
+// Запускаем бота (оплата Stars, команды и т.д.)
+(async () => {
+  try {
+    await setupCommands();
+  } catch (e) {
+    console.warn("[bot] setMyCommands failed:", e?.message);
+  }
+  await bot.start();
+  console.log("🔮 Бот запущен (оплата Stars доступна)");
+})();
