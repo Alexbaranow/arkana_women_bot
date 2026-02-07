@@ -805,3 +805,107 @@ input[type="date"] {
 .profile-recalc-btn {
   margin-top: 4px;
 }
+
+/* Оформление оплаты (гибрид Stars + карта) */
+.checkout-card {
+  max-width: 100%;
+}
+.checkout-product-title {
+  font-size: 18px;
+  margin: 0 0 4px;
+  color: var(--color-text);
+}
+.checkout-eta {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin: 0 0 12px;
+}
+.checkout-price {
+  margin: 0 0 16px;
+  font-size: 16px;
+}
+.checkout-stars {
+  font-size: 14px;
+  color: var(--color-text-soft);
+  font-weight: normal;
+}
+.checkout-error {
+  color: var(--color-error, #c62828);
+  font-size: 14px;
+  margin: 0 0 12px;
+}
+.checkout-message {
+  background: rgba(139, 122, 184, 0.1);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  font-size: 14px;
+  margin: 0 0 16px;
+}
+.checkout-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.checkout-btn {
+  margin: 0;
+}
+.checkout-hint {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin: 16px 0 0;
+  line-height: 1.4;
+}
+
+/* Блок реквизитов для перевода на карту / СБП */
+.checkout-transfer {
+  background: rgba(139, 122, 184, 0.08);
+  border: 1px solid rgba(139, 122, 184, 0.2);
+  margin-bottom: 16px;
+}
+.checkout-transfer-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 4px;
+  color: var(--color-text);
+}
+.checkout-transfer-product {
+  font-size: 14px;
+  color: var(--color-text-soft);
+  margin: 0 0 12px;
+}
+.checkout-transfer-detail {
+  font-size: 14px;
+  margin: 0 0 8px;
+  word-break: break-all;
+}
+.checkout-transfer-hint {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin: 12px 0 0;
+  line-height: 1.45;
+}
+
+/* Профиль: список заказов */
+.profile-orders-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.profile-order-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(139, 122, 184, 0.12);
+}
+.profile-order-item:last-child {
+  border-bottom: none;
+}
+.profile-order-title {
+  font-weight: 500;
+  color: var(--color-text);
+}
+.profile-order-meta {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}

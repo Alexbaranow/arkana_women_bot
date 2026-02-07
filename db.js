@@ -97,36 +97,59 @@ export function getUserReadings(userId, limit = 10) {
     .slice(0, limit);
 }
 
-// === Услуги ===
-
-export function getActiveServices() {
-  return [];
-}
-
-export function getService() {
-  return null;
-}
-
-export function createService() {}
-
 // === Заказы ===
 
-export function createOrder(userId, serviceId) {
+/** Создать заказ. payment_method: "stars" | "external" */
+export function createOrder(userId, productId, paymentMethod, productTitle, priceRub, priceStars) {
   const id = orderId++;
-  orders.push({
+  const order = {
     id,
     user_id: userId,
-    service_id: serviceId,
+    product_id: productId,
+    product_title: productTitle,
+    price_rub: priceRub,
+    price_stars: priceStars,
+    payment_method: paymentMethod,
     status: "pending",
-  });
-  return { lastInsertRowid: id };
+    telegram_payment_charge_id: null,
+    created_at: new Date().toISOString(),
+    paid_at: null,
+  };
+  orders.push(order);
+  return { id };
+}
+
+export function getOrder(orderId) {
+  const id = Number(orderId);
+  return orders.find((o) => o.id === id) || null;
+}
+
+export function getOrderByPayload(invoicePayload) {
+  const id = Number(String(invoicePayload).replace(/^order_/, ""));
+  return Number.isNaN(id) ? null : getOrder(id);
 }
 
 export function getUserOrders(userId) {
-  return orders.filter((o) => o.user_id === userId);
+  return orders
+    .filter((o) => o.user_id === userId)
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 }
 
-export function updateOrderStatus() {}
+export function updateOrderPaid(orderId, telegramPaymentChargeId = null) {
+  const order = getOrder(orderId);
+  if (!order) return false;
+  order.status = "paid";
+  order.paid_at = new Date().toISOString();
+  if (telegramPaymentChargeId != null) order.telegram_payment_charge_id = telegramPaymentChargeId;
+  return true;
+}
+
+export function updateOrderStatus(orderId, status) {
+  const order = getOrder(orderId);
+  if (!order) return false;
+  order.status = status;
+  return true;
+}
 
 // === Отзывы ===
 

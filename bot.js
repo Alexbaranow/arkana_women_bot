@@ -19,6 +19,10 @@ import { startOnboarding } from "./handlers/onboarding.js";
 import { handleMainCallback } from "./handlers/main.js";
 import { handleOnboardingMessage } from "./handlers/onboarding.js";
 import { handleFreeQuestionMessage } from "./handlers/freeQuestion.js";
+import {
+  handlePreCheckout,
+  handleSuccessfulPayment,
+} from "./handlers/payments.js";
 import { createApiServer } from "./api.js";
 
 const bot = new Bot(process.env.BOT_TOKEN);
@@ -86,6 +90,10 @@ bot.on("message:text", async (ctx, next) => {
 bot.hears("🔮 Старт", handleStartButton);
 bot.hears("Старт", handleStartButton);
 
+// === Оплата (Telegram Stars) ===
+bot.on("pre_checkout_query", handlePreCheckout);
+bot.on("message:successful_payment", handleSuccessfulPayment);
+
 // === Инлайн-кнопки главного меню ===
 bot.callbackQuery(/^main:/, handleMainCallback);
 
@@ -112,7 +120,7 @@ console.log(
   process.env.WEBAPP_URL ? process.env.WEBAPP_URL : "(не задан)"
 );
 
-createApiServer(API_PORT);
+createApiServer(API_PORT, bot);
 
 (async () => {
   try {

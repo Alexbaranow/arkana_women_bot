@@ -9,6 +9,7 @@ import Onboarding from "../screens/Onboarding";
 import FreeTarot from "../screens/FreeTarot";
 import AllSpreads from "../screens/AllSpreads";
 import Numerology from "../screens/Numerology";
+import Checkout from "../screens/Checkout";
 import Reviews from "../screens/Reviews";
 import Stub from "../screens/Stub";
 import LeaveReview from "../screens/LeaveReview";
@@ -45,8 +46,15 @@ export function createScreenRegistry(renderer, screenPayload = null) {
         onBack: goBack,
         onComplete: () => {
           const next = screenPayload?.next;
-          if (next) goTo(next);
-          else goBack();
+          if (!next) {
+            goBack();
+            return;
+          }
+          if (Object.values(ScreenId).includes(next)) {
+            goTo(next);
+          } else {
+            goTo(ScreenId.CHECKOUT, { productId: next });
+          }
         },
       }),
     },
@@ -61,6 +69,13 @@ export function createScreenRegistry(renderer, screenPayload = null) {
     [ScreenId.ALL_SPREADS]: {
       component: AllSpreads,
       getProps: () => ({ onBack: goBack, onNavigate: goTo }),
+    },
+    [ScreenId.CHECKOUT]: {
+      component: Checkout,
+      getProps: () => ({
+        onBack: goBack,
+        productId: screenPayload?.productId ?? null,
+      }),
     },
     [ScreenId.REVIEWS]: {
       component: Reviews,

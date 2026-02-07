@@ -3,6 +3,9 @@ import { useNatalChart } from "../context/NatalChartContext";
 import { getOnboardingUser, saveOnboardingUser } from "./Onboarding";
 import { getInitData } from "../utils/telegram";
 import { ScreenId } from "../constants/screens";
+
+const API_URL = import.meta.env.VITE_API_URL || "";
+const ORDER_STATUS_LABELS = { pending: "Ожидает оплаты", paid: "Оплачен", delivered: "Доставлен" };
 import { getTarotCardImageForNatal } from "../constants/tarotCards";
 
 /** В поле даты — только цифры, точки подставляются автоматически (ДД.ММ.ГГГГ) */
@@ -154,6 +157,8 @@ export default function Profile({ onBack, onNavigate }) {
   const [recalcTimeUnknown, setRecalcTimeUnknown] = useState(false);
   const [recalcError, setRecalcError] = useState(null);
   const [recalcFieldErrors, setRecalcFieldErrors] = useState({});
+  const [orders, setOrders] = useState([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
   const recalcDateRef = useRef(null);
   const recalcTimeRef = useRef(null);
   const recalcPlaceRef = useRef(null);
@@ -173,6 +178,20 @@ export default function Profile({ onBack, onNavigate }) {
   useEffect(() => {
     clearJustCalculated();
   }, [clearJustCalculated]);
+
+  useEffect(() => {
+    if (!API_URL) return;
+    setOrdersLoading(true);
+    fetch(`${API_URL}/api/my-orders`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ initData: getInitData() }),
+    })
+      .then((res) => res.json())
+      .then((data) => (data.ok && data.orders ? setOrders(data.orders) : []))
+      .catch(() => setOrders([]))
+      .finally(() => setOrdersLoading(false));
+  }, []);
 
   // После завершения пересчёта снова прячем меню ввода данных (как на экране с кнопкой «Повторный расчёт»)
   useEffect(() => {
@@ -323,28 +342,57 @@ export default function Profile({ onBack, onNavigate }) {
               data-aos-delay="150"
             >
               <p className="profile-natal-notice-text">
-                {user?.name ? (
-                  <>
-                    {user.name}, это базовый расчёт по дате и месту. Полный
-                    разбор с тарологом — в разделе «Все расклады».
-                  </>
-                ) : (
-                  <>
-                    Это базовый расчёт по дате и месту. Полный разбор с
-                    тарологом — в разделе «Все расклады».
-                  </>
-                )}
-              </p>
-              <button
-                type="button"
-                className="btn btn-outline profile-natal-notice-btn"
-                onClick={() => onNavigate("natal-chart")}
-              >
-                Все расклады → Натальная карта
-              </button>
-            </div>
-          </>
+{user?.name ? (
+              <>
+                {user.name}, это базовый расчёт по дате и месту. Полный
+                разбор с тарологом — в разделе «Все расклады».
+              </>
+            ) : (
+              <>
+                Это базовый расчёт по дате и месту. Полный разбор с
+                тарологом — в разделе «Все расклады».
+              </>
+            )}
+          </p>
+          <button
+            type="button"
+            className="btn btn-outline profile-natal-notice-btn"
+            onClick={() => onNavigate(ScreenId.ALL_SPREADS)}
+          >
+            Все расклады → Натальная карта
+          </button>
+        </div>
+      </>
         )}
+
+        <section
+          className="profile-section card profile-orders"
+          data-aos="fade-up"
+          data-aos-delay="50"
+        >
+          <h2 className="profile-section-title">Мои заказы</h2>
+          {ordersLoading ? (
+            <p className="profile-subtext">Загрузка…</p>
+          ) : orders.length === 0 ? (
+            <p className="profile-subtext">
+              Пока нет заказов. Расклады и нумерология — в главном меню.
+            </p>
+          ) : (
+            <ul className="profile-orders-list">
+              {orders.map((o) => (
+                <li key={o.id} className="profile-order-item">
+                  <span className="profile-order-title">{o.product_title}</span>
+                  <span className="profile-order-meta">
+                    {o.price_rub} ₽ · {ORDER_STATUS_LABELS[o.status] || o.status}
+                    {o.paid_at && (
+                      <> · {new Date(o.paid_at).toLocaleDateString("ru-RU")}</>
+                    )}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
 
         <section
           className="profile-section card profile-natal-recalc"

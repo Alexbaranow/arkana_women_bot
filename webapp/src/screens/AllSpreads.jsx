@@ -107,12 +107,14 @@ export default function AllSpreads({ onBack, onNavigate }) {
     setExpandedId((prev) => (prev === id ? null : id));
   };
 
-  const handleOrder = (e, id) => {
+  const handleOrder = (e, spread) => {
     e.stopPropagation();
+    const productId = spread.id;
+    if (!productId) return;
     if (isUserRegistered()) {
-      onNavigate(id);
+      onNavigate(ScreenId.CHECKOUT, { productId });
     } else {
-      onNavigate(ScreenId.ONBOARDING, { next: id });
+      onNavigate(ScreenId.ONBOARDING, { next: productId });
     }
   };
 
@@ -209,7 +211,7 @@ export default function AllSpreads({ onBack, onNavigate }) {
                     <button
                       type="button"
                       className="btn btn-primary spread-card-btn"
-                      onClick={(e) => handleOrder(e, s.id)}
+                      onClick={(e) => handleOrder(e, s)}
                     >
                       Заказать расклад
                     </button>

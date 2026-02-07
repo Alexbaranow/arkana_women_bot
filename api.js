@@ -1,7 +1,13 @@
 import express from "express";
 import { validate, parse } from "@tma.js/init-data-node";
 import { getAnswer, fetchAscendant, fetchNatalChart } from "./services/ai.js";
-import { hasFreeQuestion, useFreeQuestion } from "./db.js";
+import {
+  hasFreeQuestion,
+  useFreeQuestion,
+  createOrder,
+  getUserOrders,
+} from "./db.js";
+import { getProduct, rubToStars } from "./config/products.js";
 
 const app = express();
 app.use(express.json({ limit: "10kb" }));
@@ -9,11 +15,38 @@ app.use(express.json({ limit: "10kb" }));
 // CORS для мини-приложения (другой origin в dev или Telegram)
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   if (req.method === "OPTIONS") return res.sendStatus(204);
   next();
 });
+
+/** Извлечь Telegram user id из initData (для оплаты и заказов) */
+function getUserIdFromInitData(initData, res) {
+  const token = process.env.BOT_TOKEN;
+  if (!token) {
+    res.status(500).json({ error: "Сервер не настроен" });
+    return null;
+  }
+  if (!initData) {
+    res.status(400).json({ error: "Нужны initData" });
+    return null;
+  }
+  try {
+    validate(initData, token);
+    const parsed = parse(initData);
+    const userId = parsed?.user?.id;
+    if (!userId) {
+      res.status(401).json({ error: "Пользователь не найден в initData" });
+      return null;
+    }
+    return userId;
+  } catch (err) {
+    console.error("InitData validation failed:", err?.message);
+    res.status(401).json({ error: "Неверные данные приложения" });
+    return null;
+  }
+}
 
 /** POST /api/free-question — бесплатный вопрос из мини-приложения */
 app.post("/api/free-question", async (req, res) => {
@@ -138,7 +171,132 @@ app.post("/api/calculate-natal-chart", async (req, res) => {
   }
 });
 
-export function createApiServer(port = Number(process.env.API_PORT) || 3001) {
+// --- Оплата (гибрид: Stars + внешняя) ---
+
+/** POST /api/request-stars-invoice — создать заказ и отправить счёт в чат (Telegram Stars) */
+app.post("/api/request-stars-invoice", async (req, res) => {
+  const userId = getUserIdFromInitData(req.body?.initData, res);
+  if (userId == null) return;
+
+  const productId = req.body?.productId;
+  const product = getProduct(productId);
+  if (!product) {
+    return res.status(400).json({ error: "Неизвестный продукт" });
+  }
+
+  const priceStars = rubToStars(product.price_rub);
+  const { id: orderId } = createOrder(
+    userId,
+    product.id,
+    "stars",
+    product.title,
+    product.price_rub,
+    priceStars
+  );
+
+  const bot = req.app.get("bot");
+  if (!bot) {
+    return res.status(500).json({ error: "Бот не подключён к API" });
+  }
+
+  try {
+    await bot.api.sendInvoice(userId, {
+      title: product.title,
+      description: `${product.title} · Результат ${product.delivery_eta}`,
+      payload: `order_${orderId}`,
+      currency: "XTR",
+      prices: [{ label: product.title, amount: priceStars }],
+      provider_token: "",
+    });
+    return res.json({
+      ok: true,
+      orderId,
+      message:
+        "В чат с ботом отправлен счёт. Перейди в диалог с ботом и нажми «Оплатить».",
+    });
+  } catch (err) {
+    console.error("sendInvoice error:", err?.message);
+    return res.status(500).json({
+      error: "Не удалось отправить счёт. Попробуй позже или оплати картой.",
+    });
+  }
+});
+
+/** POST /api/create-external-order — создать заказ: оплата на карту/СБП (реквизиты) или по ссылке */
+app.post("/api/create-external-order", async (req, res) => {
+  const userId = getUserIdFromInitData(req.body?.initData, res);
+  if (userId == null) return;
+
+  const productId = req.body?.productId;
+  const product = getProduct(productId);
+  if (!product) {
+    return res.status(400).json({ error: "Неизвестный продукт" });
+  }
+
+  const priceStars = rubToStars(product.price_rub);
+  const { id: orderId } = createOrder(
+    userId,
+    product.id,
+    "external",
+    product.title,
+    product.price_rub,
+    priceStars
+  );
+
+  const cardDescription = process.env.PAYMENT_CARD_DESCRIPTION || "";
+  const sbpPhone = process.env.PAYMENT_SBP_PHONE || "";
+  const externalUrl = process.env.EXTERNAL_PAYMENT_URL || "";
+
+  // Оплата переводом на карту / СБП — отдаём реквизиты, без ссылок и посредников
+  if (cardDescription.trim() || sbpPhone.trim()) {
+    return res.json({
+      ok: true,
+      orderId,
+      amount: product.price_rub,
+      productTitle: product.title,
+      paymentType: "transfer",
+      card: cardDescription.trim() || null,
+      sbpPhone: sbpPhone.trim() || null,
+      message:
+        "Переведи указанную сумму на карту или по СБП. В комментарии укажи номер заказа. После оплаты напиши в чат боту.",
+    });
+  }
+
+  // Иначе — ссылка на внешнюю страницу оплаты (если настроена)
+  const paymentUrl = externalUrl ? `${externalUrl}?order_id=${orderId}` : null;
+  return res.json({
+    ok: true,
+    orderId,
+    paymentUrl,
+    amount: product.price_rub,
+    productTitle: product.title,
+    paymentType: "link",
+    message:
+      "После оплаты по ссылке результат придёт в этот чат. Сохрани номер заказа.",
+  });
+});
+
+/** POST /api/my-orders — список заказов пользователя */
+app.post("/api/my-orders", async (req, res) => {
+  const userId = getUserIdFromInitData(req.body?.initData, res);
+  if (userId == null) return;
+
+  const list = getUserOrders(userId).map((o) => ({
+    id: o.id,
+    product_id: o.product_id,
+    product_title: o.product_title,
+    price_rub: o.price_rub,
+    payment_method: o.payment_method,
+    status: o.status,
+    created_at: o.created_at,
+    paid_at: o.paid_at,
+  }));
+
+  return res.json({ ok: true, orders: list });
+});
+
+export function createApiServer(port = Number(process.env.API_PORT) || 3001, bot = null) {
+  if (bot) app.set("bot", bot);
   return app.listen(port, () => {
     console.log(`📡 API слушает порт ${port}`);
   });
