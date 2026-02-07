@@ -1,15 +1,16 @@
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { MoonLoader } from "react-spinners";
 import { useNatalChart } from "../context/NatalChartContext";
 import { useCardDayRequest } from "../context/CardDayRequestContext";
 import { getOnboardingUser, saveOnboardingUser } from "./Onboarding";
 import { getInitData } from "../utils/telegram";
 import { getDisplayNatal } from "../utils/natal";
+import { renderTextWithBold } from "../utils/format";
 import { ScreenId } from "../constants/screens";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 const ORDER_STATUS_LABELS = { pending: "Ожидает оплаты", paid: "Оплачен", delivered: "Доставлен" };
-import { getTarotCardImageForNatal } from "../constants/tarotCards";
+import { getTarotCardImageForNatal, getCardImageForCardDay } from "../constants/tarotCards";
 
 /** В поле даты — только цифры, точки подставляются автоматически (ДД.ММ.ГГГГ) */
 function formatDateInput(value) {
@@ -81,22 +82,14 @@ function parseUserTimeInput(str) {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
-/**
- * Рендерит строку с markdown-жирным (**текст**): разбивает по ** и чередует обычный текст и <strong>.
- */
-function renderTextWithBold(text) {
-  if (typeof text !== "string" || !text) return null;
-  const parts = text.split(/\*\*(.*?)\*\*/g);
-  if (parts.length === 1) return text;
-  return parts.map((part, i) =>
-    i % 2 === 1 ? <strong key={i}>{part}</strong> : part
-  );
-}
-
 export default function Profile({ onBack, onNavigate }) {
   const { natalResult, clearJustCalculated, startCalculation, isCalculating } =
     useNatalChart();
-  const { isRequesting: isCardDayRequesting } = useCardDayRequest();
+  const {
+    isRequesting: isCardDayRequesting,
+    cardOfTheDay: contextCard,
+    setCardOfTheDay,
+  } = useCardDayRequest();
   const user = getOnboardingUser();
   const displayNatal = useMemo(
     () => (natalResult ? getDisplayNatal(natalResult) : null),
@@ -111,7 +104,6 @@ export default function Profile({ onBack, onNavigate }) {
   const [recalcFieldErrors, setRecalcFieldErrors] = useState({});
   const [orders, setOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
-  const [cardOfTheDay, setCardOfTheDay] = useState(null);
   const [cardOfTheDayLoading, setCardOfTheDayLoading] = useState(true);
   const recalcDateRef = useRef(null);
   const recalcTimeRef = useRef(null);
@@ -147,11 +139,12 @@ export default function Profile({ onBack, onNavigate }) {
       .finally(() => setOrdersLoading(false));
   }, []);
 
-  useEffect(() => {
+  const fetchCardOfTheDay = useCallback(() => {
     if (!API_URL) {
       setCardOfTheDayLoading(false);
       return;
     }
+    setCardOfTheDayLoading(true);
     fetch(`${API_URL}/api/card-of-the-day/get`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -164,7 +157,11 @@ export default function Profile({ onBack, onNavigate }) {
       })
       .catch(() => setCardOfTheDay(null))
       .finally(() => setCardOfTheDayLoading(false));
-  }, []);
+  }, [setCardOfTheDay]);
+
+  useEffect(() => {
+    fetchCardOfTheDay();
+  }, [fetchCardOfTheDay]);
 
   // После завершения пересчёта снова прячем меню ввода данных (как на экране с кнопкой «Повторный расчёт»)
   useEffect(() => {
@@ -262,13 +259,20 @@ export default function Profile({ onBack, onNavigate }) {
           <h2 className="profile-section-title">Карта дня</h2>
           {cardOfTheDayLoading ? (
             <p className="profile-subtext">Загрузка…</p>
-          ) : cardOfTheDay?.text ? (
+          ) : contextCard?.text ? (
             <>
               <p className="profile-card-of-the-day-expiry">
                 Действует до 24:00 (по Москве)
               </p>
+              <div className="card-day-result-image-wrap">
+                <img
+                  src={getCardImageForCardDay(contextCard.text)}
+                  alt="Карта дня"
+                  className="card-day-result-image"
+                />
+              </div>
               <p className="profile-card-of-the-day-text">
-                {renderTextWithBold(cardOfTheDay.text)}
+                {renderTextWithBold(contextCard.text)}
               </p>
             </>
           ) : isCardDayRequesting ? (

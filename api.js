@@ -8,6 +8,7 @@ import {
   getUserOrders,
   saveCardOfTheDay,
   getCardOfTheDay,
+  deleteCardOfTheDay,
   deleteExpiredCardsOfTheDay,
 } from "./db.js";
 import { getProduct, rubToStars } from "./config/products.js";
@@ -24,6 +25,10 @@ app.use((req, res, next) => {
   next();
 });
 
+const isDev = process.env.NODE_ENV !== "production";
+const DEV_USER_ID =
+  Number(process.env.DEV_USER_ID) || Number(process.env.ADMIN_ID) || 0;
+
 /** Извлечь Telegram user id из initData (для оплаты и заказов) */
 function getUserIdFromInitData(initData, res) {
   const token = process.env.BOT_TOKEN;
@@ -31,7 +36,11 @@ function getUserIdFromInitData(initData, res) {
     res.status(500).json({ error: "Сервер не настроен" });
     return null;
   }
-  if (!initData) {
+  // Режим разработки: без initData (браузер) — используем DEV_USER_ID
+  if (!initData?.trim()) {
+    if (isDev && DEV_USER_ID) {
+      return DEV_USER_ID;
+    }
     res.status(400).json({ error: "Нужны initData" });
     return null;
   }
@@ -56,7 +65,7 @@ app.post("/api/free-question", async (req, res) => {
   const { initData, question } = req.body || {};
   const token = process.env.BOT_TOKEN;
 
-  if (!initData || typeof question !== "string") {
+  if (typeof question !== "string") {
     return res.status(400).json({ error: "Нужны initData и question" });
   }
 
@@ -65,17 +74,22 @@ app.post("/api/free-question", async (req, res) => {
   }
 
   let userId;
-  try {
-    validate(initData, token);
-    const parsed = parse(initData);
-    userId = parsed?.user?.id;
-  } catch (err) {
-    console.error("InitData validation failed:", err?.message);
-    return res.status(401).json({ error: "Неверные данные приложения" });
-  }
-
-  if (!userId) {
-    return res.status(401).json({ error: "Пользователь не найден в initData" });
+  if (!initData?.trim() && isDev && DEV_USER_ID) {
+    userId = DEV_USER_ID;
+  } else if (!initData) {
+    return res.status(400).json({ error: "Нужны initData и question" });
+  } else {
+    try {
+      validate(initData, token);
+      const parsed = parse(initData);
+      userId = parsed?.user?.id;
+    } catch (err) {
+      console.error("InitData validation failed:", err?.message);
+      return res.status(401).json({ error: "Неверные данные приложения" });
+    }
+    if (!userId) {
+      return res.status(401).json({ error: "Пользователь не найден в initData" });
+    }
   }
 
   const text = question.trim();
@@ -103,7 +117,6 @@ app.post("/api/free-question", async (req, res) => {
 
 function validateNatalRequest(req, res) {
   const { initData, dateOfBirth, placeOfBirth, timeOfBirth } = req.body || {};
-  const isDev = process.env.NODE_ENV !== "production";
 
   if (!dateOfBirth || !placeOfBirth) {
     res.status(400).json({ error: "Нужны dateOfBirth и placeOfBirth" });
@@ -350,10 +363,20 @@ app.post("/api/card-of-the-day", async (req, res) => {
     });
   } catch (err) {
     console.error("card-of-the-day error:", err?.message);
-    return res.status(500).json({
+    const payload = {
       error: "Не удалось сгенерировать карту дня. Попробуй позже.",
-    });
+    };
+    if (isDev) payload.serverError = err?.message || String(err);
+    return res.status(500).json(payload);
   }
+});
+
+/** POST /api/card-of-the-day/clear — удалить карту дня (для сброса профиля) */
+app.post("/api/card-of-the-day/clear", async (req, res) => {
+  const userId = getUserIdFromInitData(req.body?.initData, res);
+  if (userId == null) return;
+  deleteCardOfTheDay(userId);
+  return res.json({ ok: true });
 });
 
 /** POST /api/card-of-the-day/get — получить текущую карту дня пользователя */

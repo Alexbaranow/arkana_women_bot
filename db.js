@@ -59,6 +59,18 @@ export function getCardOfTheDay(userId) {
   return entry;
 }
 
+/** Удалить карту дня пользователя (для сброса профиля) */
+export function deleteCardOfTheDay(userId) {
+  const dateKey = getMoscowDateKey();
+  for (let i = cardOfTheDayStore.length - 1; i >= 0; i--) {
+    if (cardOfTheDayStore[i].user_id === userId && cardOfTheDayStore[i].date_key === dateKey) {
+      cardOfTheDayStore.splice(i, 1);
+      return true;
+    }
+  }
+  return false;
+}
+
 /** Удалить истёкшие карты дня (можно вызывать периодически) */
 export function deleteExpiredCardsOfTheDay() {
   const now = new Date();

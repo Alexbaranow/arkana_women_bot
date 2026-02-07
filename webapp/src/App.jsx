@@ -6,6 +6,9 @@ import { useNatalChart } from "./context/NatalChartContext";
 import { useCardDayRequest } from "./context/CardDayRequestContext";
 import ScreenRouter from "./components/ScreenRouter";
 import { ScreenId } from "./constants/screens";
+import { getInitData } from "./utils/telegram";
+
+const API_URL = import.meta.env.VITE_API_URL || "";
 
 export default function App() {
   const { currentScreen, goTo, goBack, stubTitle, screenPayload } =
@@ -46,8 +49,14 @@ export default function App() {
     ? "✨ Натальная карта готова — смотри в личном кабинете"
     : "✨ Карта дня готова — смотри в личном кабинете";
 
-  const resetStorage = () => {
+  const resetStorage = async () => {
     try {
+      const base = API_URL || "";
+      await fetch(`${base}/api/card-of-the-day/clear`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ initData: getInitData() }),
+      });
       localStorage.removeItem("arkana_user");
       localStorage.removeItem("arkana_natal_result");
       window.location.reload();

@@ -130,7 +130,7 @@ export function isUserRegistered() {
   }
 }
 
-export default function Onboarding({ onBack, onComplete }) {
+export default function Onboarding({ onBack, onComplete, next }) {
   const { startCalculation } = useNatalChart();
   const [name, setName] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
@@ -351,16 +351,18 @@ export default function Onboarding({ onBack, onComplete }) {
           >
             Продолжить
           </button>
-          <button
-            type="button"
-            className="btn btn-outline"
-            onClick={handleSkip}
-            style={{ marginTop: "8px" }}
-            data-aos="fade-up"
-            data-aos-delay="180"
-          >
-            Не указывать — продолжить без этого
-          </button>
+          {next !== "card-day" && (
+            <button
+              type="button"
+              className="btn btn-outline"
+              onClick={handleSkip}
+              style={{ marginTop: "8px" }}
+              data-aos="fade-up"
+              data-aos-delay="180"
+            >
+              Не указывать — продолжить без этого
+            </button>
+          )}
           <button
             type="button"
             className="btn btn-outline"

@@ -2,6 +2,13 @@
  * Общий экземпляр бота для dev (bot.js) и prod (server-webapp.js).
  * Экспортирует настроенного бота и setupCommands.
  */
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
+import { config } from "dotenv";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+config({ path: join(__dirname, ".env") });
+
 import { Bot, session } from "grammy";
 import { createUser } from "./db.js";
 import {
@@ -40,9 +47,7 @@ bot.use(async (ctx, next) => {
         ctx.from.last_name
       );
     }
-  } catch (e) {
-    console.warn("[bot] createUser:", e?.message);
-  }
+  } catch {}
   await next();
 });
 

@@ -203,7 +203,7 @@ const CARD_OF_THE_DAY_SYSTEM = `Ты — мудрый таролог и инту
  * @param {object} opts - { userName?, ascendant: { sign, description }, natalChart?, tarotCardName? }
  * @returns {Promise<string>}
  */
-export async function getCardOfTheDayContent(opts) {
+export async function getCardOfTheDayContent(opts, retry = false) {
   const openai = getOpenAI();
   const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
   const { userName, ascendant, natalChart, tarotCardName } = opts;
@@ -213,8 +213,9 @@ export async function getCardOfTheDayContent(opts) {
     parts.push(`Имя: ${String(userName).trim()}.`);
   }
   if (ascendant?.sign || ascendant?.description) {
+    const desc = String(ascendant.description || "").slice(0, 500);
     parts.push(
-      `Асцендент: ${[ascendant.sign, ascendant.description].filter(Boolean).join(" — ")}.`
+      `Асцендент: ${ascendant.sign || ""} — ${desc}.`
     );
   }
   if (natalChart && String(natalChart).trim()) {
@@ -242,12 +243,21 @@ export async function getCardOfTheDayContent(opts) {
       { role: "system", content: CARD_OF_THE_DAY_SYSTEM },
       { role: "user", content: userMessage },
     ],
-    max_tokens: 600,
+    max_tokens: 1200,
   });
 
-  const content = extractTextFromChoice(completion.choices[0]);
+  const choice = completion.choices[0];
+  const content = extractTextFromChoice(choice);
+  if (!content && !retry) {
+    await new Promise((r) => setTimeout(r, 1500));
+    return getCardOfTheDayContent(opts, true);
+  }
   if (!content) {
-    throw new Error("Пустой ответ от нейросети (карта дня)");
+    const reason = choice?.finish_reason || "unknown";
+    console.warn("[ai] card-of-the-day empty:", { finish_reason: reason });
+    throw new Error(
+      `Пустой ответ от нейросети (карта дня). finish_reason: ${reason}`
+    );
   }
   return content.trim();
 }

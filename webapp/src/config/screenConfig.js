@@ -61,6 +61,7 @@ export function createScreenRegistry(renderer, screenPayload = null) {
       getProps: () => ({
         onBack: goBack,
         onComplete: () => completeOnboarding(goTo, goBack, screenPayload?.next),
+        next: screenPayload?.next ?? null,
       }),
     },
     [ScreenId.FREE_TAROT]: {

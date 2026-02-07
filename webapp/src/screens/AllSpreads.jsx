@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MoonLoader } from "react-spinners";
 import { useCardDayRequest } from "../context/CardDayRequestContext";
 import { ScreenId } from "../constants/screens";
 import { isUserRegistered } from "./Onboarding";
+import { getInitData } from "../utils/telegram";
+
+const API_URL = import.meta.env.VITE_API_URL || "";
 
 const SPREADS = [
   {
@@ -103,8 +106,24 @@ const SPREADS = [
 ];
 
 export default function AllSpreads({ onBack, onNavigate }) {
-  const { isRequesting: isCardDayRequesting } = useCardDayRequest();
+  const {
+    isRequesting: isCardDayRequesting,
+    hasCardOfTheDay,
+    setHasCardOfTheDay,
+  } = useCardDayRequest();
   const [expandedId, setExpandedId] = useState(null);
+
+  useEffect(() => {
+    const base = API_URL || "";
+    fetch(`${base}/api/card-of-the-day/get`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ initData: getInitData() }),
+    })
+      .then((res) => res.json())
+      .then((data) => setHasCardOfTheDay(!!(data.ok && data.card?.text)))
+      .catch(() => setHasCardOfTheDay(false));
+  }, [setHasCardOfTheDay]);
 
   const toggle = (id) => {
     setExpandedId((prev) => (prev === id ? null : id));
@@ -245,7 +264,7 @@ export default function AllSpreads({ onBack, onNavigate }) {
                         className="btn btn-primary spread-card-btn"
                         onClick={(e) => handleOrder(e, s)}
                       >
-                        {s.id === "card-day" ? "Получить карту дня" : "Заказать расклад"}
+                        {s.id === "card-day" ? (hasCardOfTheDay ? "Посмотреть карту" : "Получить карту дня") : "Заказать расклад"}
                       </button>
                     )}
                   </div>

@@ -923,6 +923,31 @@ input[type="date"] {
   line-height: 1.4;
 }
 
+/* Результат карты дня: изображение + описание */
+.card-day-result {
+  max-width: 100%;
+  padding: 20px;
+  text-align: left;
+}
+.card-day-result .profile-card-of-the-day-expiry {
+  margin-bottom: 16px;
+}
+.card-day-result-image-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+.card-day-result-image {
+  max-width: 180px;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+}
+.card-day-result-text {
+  white-space: pre-wrap;
+}
+
 /* Профиль: блок «Карта дня» (до 24:00) */
 .profile-card-of-the-day {
   margin-bottom: 0;
