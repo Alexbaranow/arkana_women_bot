@@ -214,7 +214,7 @@ app.post("/api/request-stars-invoice", async (req, res) => {
   if (!bot) {
     return res.status(503).json({
       error:
-        "Оплата Stars недоступна: API запущен без бота. Запускайте приложение через node arkana_women_bot.js (бот и API одним процессом).",
+        "Оплата Stars недоступна: API запущен без бота. В Docker используйте CMD [\"node\", \"server-webapp.js\"]. Локально — node arkana_women_bot.js или node server-webapp.js.",
     });
   }
 

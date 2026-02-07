@@ -23,9 +23,12 @@ const staticDir = join(__dirname, "webapp", "dist");
 
 // Передаём бота в API — иначе оплата Stars недоступна
 app.set("bot", bot);
+const botAttached = !!app.get("bot");
+console.log("[startup] Бот привязан к API (Stars):", botAttached ? "да" : "нет");
 
-// Проверка живости для nginx / мониторинга
+// Проверка живости для nginx / мониторинга (X-Stars-Available: 1 если бот привязан)
 app.get("/health", (req, res) => {
+  res.setHeader("X-Stars-Available", app.get("bot") ? "1" : "0");
   res.status(200).send("ok");
 });
 

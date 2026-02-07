@@ -20,6 +20,10 @@ COPY services ./services
 COPY --from=webapp-builder /app/webapp/dist ./webapp/dist
 
 ENV NODE_ENV=production
+# Реквизиты для «Оплатить картой / СБП» (переопределяются через .env при запуске)
+ENV PAYMENT_CARD_DESCRIPTION=""
+ENV PAYMENT_SBP_PHONE=""
 EXPOSE 8080
 
+# Важно: именно server-webapp.js (бот + API в одном процессе), иначе оплата Stars недоступна
 CMD ["node", "server-webapp.js"]
