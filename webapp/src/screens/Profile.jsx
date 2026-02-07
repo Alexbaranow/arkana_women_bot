@@ -1,5 +1,7 @@
 import { useEffect, useState, useMemo, useRef } from "react";
+import { MoonLoader } from "react-spinners";
 import { useNatalChart } from "../context/NatalChartContext";
+import { useCardDayRequest } from "../context/CardDayRequestContext";
 import { getOnboardingUser, saveOnboardingUser } from "./Onboarding";
 import { getInitData } from "../utils/telegram";
 import { getDisplayNatal } from "../utils/natal";
@@ -94,6 +96,7 @@ function renderTextWithBold(text) {
 export default function Profile({ onBack, onNavigate }) {
   const { natalResult, clearJustCalculated, startCalculation, isCalculating } =
     useNatalChart();
+  const { isRequesting: isCardDayRequesting } = useCardDayRequest();
   const user = getOnboardingUser();
   const displayNatal = useMemo(
     () => (natalResult ? getDisplayNatal(natalResult) : null),
@@ -268,6 +271,16 @@ export default function Profile({ onBack, onNavigate }) {
                 {renderTextWithBold(cardOfTheDay.text)}
               </p>
             </>
+          ) : isCardDayRequesting ? (
+            <div className="profile-card-of-the-day-requesting" role="status">
+              <span className="profile-card-of-the-day-empty">Идёт расчёт</span>
+              <MoonLoader
+                color="var(--color-primary, #7c3aed)"
+                size={28}
+                speedMultiplier={0.9}
+                aria-hidden
+              />
+            </div>
           ) : (
             <>
               <p className="profile-card-of-the-day-empty">

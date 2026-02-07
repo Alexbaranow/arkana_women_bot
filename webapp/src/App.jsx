@@ -1,7 +1,9 @@
 import { useEffect } from "react";
 import AOS from "aos";
+import { MoonLoader } from "react-spinners";
 import { useNavigation } from "./hooks/useNavigation";
 import { useNatalChart } from "./context/NatalChartContext";
+import { useCardDayRequest } from "./context/CardDayRequestContext";
 import ScreenRouter from "./components/ScreenRouter";
 import { ScreenId } from "./constants/screens";
 
@@ -24,13 +26,25 @@ export default function App() {
   }, [currentScreen]);
   const { isCalculating, justCalculated, clearJustCalculated } =
     useNatalChart();
+  const { justCardDayDone, clearJustCardDayDone } = useCardDayRequest();
 
   const showHeader = currentScreen !== ScreenId.LANDING;
 
   const openProfile = () => {
     clearJustCalculated();
+    clearJustCardDayDone();
     goTo(ScreenId.PROFILE);
   };
+
+  useEffect(() => {
+    if (currentScreen === ScreenId.PROFILE) clearJustCardDayDone();
+  }, [currentScreen, clearJustCardDayDone]);
+
+  const showReadyNotice =
+    (justCalculated || justCardDayDone) && currentScreen !== ScreenId.PROFILE;
+  const readyNoticeText = justCalculated
+    ? "✨ Натальная карта готова — смотри в личном кабинете"
+    : "✨ Карта дня готова — смотри в личном кабинете";
 
   const resetStorage = () => {
     try {
@@ -42,20 +56,6 @@ export default function App() {
 
   return (
     <>
-      {isCalculating && (
-        <div
-          className="global-natal-indicator"
-          role="status"
-          aria-live="polite"
-        >
-          <div className="global-natal-indicator-track">
-            <div className="global-natal-indicator-fill" />
-          </div>
-          <span className="global-natal-indicator-text">
-            Рассчитываем асцендент и натальную карту…
-          </span>
-        </div>
-      )}
       {showHeader && (
         <header className="app-topbar">
           <div className="app-topbar-left">
@@ -63,6 +63,19 @@ export default function App() {
             <span className="app-topbar-title">Женский Аркан</span>
           </div>
           <div className="app-topbar-right">
+            {isCalculating && (
+              <div
+                className="app-topbar-spinner"
+                role="status"
+                aria-label="Рассчитываем асцендент и натальную карту"
+              >
+                <MoonLoader
+                  color="var(--color-primary, #7c3aed)"
+                  size={28}
+                  speedMultiplier={0.9}
+                />
+              </div>
+            )}
             <button
               type="button"
               className="app-profile-btn app-debug-btn"
@@ -99,14 +112,14 @@ export default function App() {
           </div>
         </header>
       )}
-      {justCalculated && currentScreen !== ScreenId.PROFILE && (
+      {showReadyNotice && (
         <button
           type="button"
           className="natal-ready-notice"
           onClick={openProfile}
           aria-live="polite"
         >
-          ✨ Натальная карта готова — смотри в личном кабинете
+          {readyNoticeText}
         </button>
       )}
       <ScreenRouter

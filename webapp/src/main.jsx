@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { NatalChartProvider } from "./context/NatalChartContext";
+import { CardDayRequestProvider } from "./context/CardDayRequestContext";
 import App from "./App";
 import "aos/dist/aos.css";
 import "./style.css";
@@ -14,7 +15,9 @@ if (typeof window !== "undefined" && window.Telegram?.WebApp) {
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <NatalChartProvider>
-      <App />
+      <CardDayRequestProvider>
+        <App />
+      </CardDayRequestProvider>
     </NatalChartProvider>
   </React.StrictMode>
 );

@@ -151,6 +151,13 @@ h1 {
   gap: 8px;
 }
 
+.app-topbar-spinner {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .app-debug-btn {
   width: 36px;
   height: 36px;
@@ -477,6 +484,14 @@ h1 {
 .spread-card-btn {
   margin-top: 0;
 }
+.spread-card-btn-requesting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: default;
+  opacity: 0.95;
+}
 
 /* Форма отзыва */
 .rating-stars {
@@ -595,45 +610,6 @@ input[type="date"].review-textarea,
 /* font-size 16px предотвращает автозум iOS при фокусе на инпут */
 input[type="date"] {
   font-size: 16px;
-}
-
-/* Глобальный индикатор расчёта асцендента/натальной карты (заполняемая полоса) */
-.global-natal-indicator {
-  padding: 0;
-  background: linear-gradient(
-    135deg,
-    var(--color-primary) 0%,
-    var(--color-primary-deep) 100%
-  );
-  color: white;
-  font-size: 14px;
-  font-weight: 500;
-  box-shadow: var(--shadow-soft);
-}
-
-.global-natal-indicator-track {
-  height: 4px;
-  background: rgba(255, 255, 255, 0.25);
-  overflow: hidden;
-}
-
-.global-natal-indicator-fill {
-  height: 100%;
-  width: 0;
-  background: rgba(255, 255, 255, 0.95);
-  animation: global-natal-fill 19s linear forwards;
-}
-
-.global-natal-indicator-text {
-  display: block;
-  padding: 10px 16px;
-  text-align: center;
-}
-
-@keyframes global-natal-fill {
-  to {
-    width: 100%;
-  }
 }
 
 /* Личный кабинет */
@@ -972,6 +948,15 @@ input[type="date"] {
 .profile-card-of-the-day-empty {
   font-size: 14px;
   color: var(--color-text-muted);
+  margin: 0;
+}
+.profile-card-of-the-day-requesting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.profile-card-of-the-day-requesting .profile-card-of-the-day-empty {
   margin: 0;
 }
 .profile-card-of-the-day-link {

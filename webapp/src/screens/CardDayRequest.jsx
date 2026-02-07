@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { MoonLoader } from "react-spinners";
+import { useCardDayRequest } from "../context/CardDayRequestContext";
 import { getOnboardingUser } from "./Onboarding";
 import { getInitData } from "../utils/telegram";
 import { getNatalForCardDay, hasNatalForCardDay } from "../utils/natal";
@@ -10,6 +11,7 @@ const ERROR_NEED_NATAL =
   "Для более точной карты дня сначала рассчитай асцендент и натальную карту в личном кабинете (раздел «Асцендент и натальная карта»).";
 
 export default function CardDayRequest({ onBack, onNavigate }) {
+  const { setRequesting, setJustCardDayDone } = useCardDayRequest();
   const user = getOnboardingUser();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -39,6 +41,7 @@ export default function CardDayRequest({ onBack, onNavigate }) {
       const ascendant = displayNatal.ascendant;
       const natalChart = displayNatal.natalChart?.trim() ?? "";
 
+      setRequesting(true);
       try {
         const res = await fetch(`${API_URL}/api/card-of-the-day`, {
           method: "POST",
@@ -57,17 +60,24 @@ export default function CardDayRequest({ onBack, onNavigate }) {
           setLoading(false);
           return;
         }
+        setRequesting(false);
+        setJustCardDayDone(true);
         onNavigate(ScreenId.PROFILE);
       } catch {
         if (!cancelled) {
           setError("Ошибка сети. Попробуй ещё раз.");
           setLoading(false);
         }
+      } finally {
+        if (!cancelled) setRequesting(false);
       }
     };
     run();
-    return () => { cancelled = true; };
-  }, [user?.name, onNavigate]);
+    return () => {
+      cancelled = true;
+      setRequesting(false);
+    };
+  }, [user?.name, onNavigate, setRequesting, setJustCardDayDone]);
 
   return (
     <div className="screen screen-card-day-request">

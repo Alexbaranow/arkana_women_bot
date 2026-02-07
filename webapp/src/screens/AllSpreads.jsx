@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { MoonLoader } from "react-spinners";
+import { useCardDayRequest } from "../context/CardDayRequestContext";
 import { ScreenId } from "../constants/screens";
 import { isUserRegistered } from "./Onboarding";
 
@@ -101,6 +103,7 @@ const SPREADS = [
 ];
 
 export default function AllSpreads({ onBack, onNavigate }) {
+  const { isRequesting: isCardDayRequesting } = useCardDayRequest();
   const [expandedId, setExpandedId] = useState(null);
 
   const toggle = (id) => {
@@ -111,8 +114,9 @@ export default function AllSpreads({ onBack, onNavigate }) {
     e.stopPropagation();
     const productId = spread.id;
     if (!productId) return;
-    // Карта дня — бесплатно; экран со спиннером и запросом, затем профиль
+    // Карта дня — бесплатно; не запускаем повторный запрос, если уже идёт расчёт
     if (productId === "card-day") {
+      if (isCardDayRequesting) return;
       if (isUserRegistered()) {
         onNavigate(ScreenId.CARD_DAY_REQUEST);
       } else {
@@ -221,13 +225,29 @@ export default function AllSpreads({ onBack, onNavigate }) {
                         </p>
                       </>
                     )}
-                    <button
-                      type="button"
-                      className="btn btn-primary spread-card-btn"
-                      onClick={(e) => handleOrder(e, s)}
-                    >
-                      {s.id === "card-day" ? "Получить карту дня" : "Заказать расклад"}
-                    </button>
+                    {s.id === "card-day" && isCardDayRequesting ? (
+                      <div
+                        className="btn btn-primary spread-card-btn spread-card-btn-requesting"
+                        role="status"
+                        aria-busy="true"
+                      >
+                        <span>Идёт расчёт</span>
+                        <MoonLoader
+                          color="rgba(255,255,255,0.9)"
+                          size={24}
+                          speedMultiplier={0.9}
+                          aria-hidden
+                        />
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        className="btn btn-primary spread-card-btn"
+                        onClick={(e) => handleOrder(e, s)}
+                      >
+                        {s.id === "card-day" ? "Получить карту дня" : "Заказать расклад"}
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
