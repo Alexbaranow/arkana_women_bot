@@ -68,7 +68,7 @@ export default function MainMenu({ onNavigate }) {
             className="menu-card menu-card-paid"
             onClick={() =>
               isUserRegistered()
-                ? onNavigate("card-3days")
+                ? onNavigate(ScreenId.CHECKOUT, { productId: "card-3days" })
                 : onNavigate(ScreenId.ONBOARDING, { next: "card-3days" })
             }
             data-aos="fade-up"
@@ -77,8 +77,9 @@ export default function MainMenu({ onNavigate }) {
             <span className="menu-icon">🪙</span>
             <div className="menu-text">
               <span className="menu-title">Карта дня на 3 дня</span>
+              <span className="menu-desc">Каждую карту лично считает таролог — не ИИ</span>
             </div>
-            <span className="menu-price">100 ₽</span>
+            <span className="menu-price">99 ₽</span>
           </button>
           <button
             className="menu-card"

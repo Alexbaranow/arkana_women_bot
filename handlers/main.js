@@ -63,7 +63,7 @@ async function handleAllSpreads(ctx) {
 }
 
 async function handleCard3Days(ctx) {
-  await ctx.reply("🪙 Карта дня на 3 дня (100 ₽) — в следующем шаге.");
+  await ctx.reply("🪙 Карта дня на 3 дня (99 ₽) — в следующем шаге.");
 }
 
 async function handleFateMatrix(ctx) {

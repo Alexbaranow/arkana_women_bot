@@ -84,7 +84,7 @@ bot.command("spreads", async (ctx) => {
 });
 bot.command("card3", async (ctx) => {
   const kb = getAppInlineKeyboardForScreen("card-3days");
-  await ctx.reply("🪙 Карта дня на 3 дня (100 ₽)", {
+  await ctx.reply("🪙 Карта дня на 3 дня (99 ₽)", {
     reply_markup: kb ?? undefined,
   });
 });

@@ -331,6 +331,7 @@ app.post("/api/my-orders", async (req, res) => {
     status: o.status,
     created_at: o.created_at,
     paid_at: o.paid_at,
+    result_text: o.result_text ?? null,
   }));
 
   return res.json({ ok: true, orders: list });

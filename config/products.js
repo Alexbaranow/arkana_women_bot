@@ -9,31 +9,31 @@ export const PRODUCTS = [
   {
     id: "card-3days",
     title: "Карта дня на 3 дня",
-    price_rub: 100,
-    delivery_eta: "в течение 24 часов",
+    price_rub: 99,
+    delivery_eta: "расклад приходит ежедневно в выбранное время на 3 дня",
   },
   {
     id: "three-cards",
     title: "Три карты",
-    price_rub: 300,
+    price_rub: 299,
     delivery_eta: "через 2 часа",
   },
   {
     id: "heart-present",
     title: "Сердце в настоящем",
-    price_rub: 700,
+    price_rub: 699,
     delivery_eta: "через 2 часа",
   },
   {
     id: "golden-flow",
     title: "Золотой поток",
-    price_rub: 700,
+    price_rub: 699,
     delivery_eta: "через 2 часа",
   },
   {
     id: "body-energy",
     title: "Энергия тела",
-    price_rub: 700,
+    price_rub: 699,
     delivery_eta: "через 2 часа",
   },
   {
@@ -45,7 +45,7 @@ export const PRODUCTS = [
   {
     id: "natal-chart",
     title: "Натальная карта",
-    price_rub: 850,
+    price_rub: 849,
     delivery_eta: "в течение 24 часов",
   },
 ];

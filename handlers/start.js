@@ -47,7 +47,7 @@ function getMainMenuInlineKeyboard() {
       .webApp("Все расклады 📋", getWebAppUrlWithScreen("all-spreads"))
       .row()
       .webApp(
-        "Карта дня на 3 дня (100 ₽) 🪙",
+        "Карта дня на 3 дня (99 ₽) 🪙",
         getWebAppUrlWithScreen("card-3days")
       )
       .row()
@@ -94,7 +94,7 @@ const HELP_TEXT = `*Помощь* ❓
 • Посмотреть расклады и цены
 • Почитать отзывы и оставить свой
 
-Если что-то не работает — напиши сюда, отвечу. 💜`;
+Если что-то не работает — напиши сюда — @${process.env.SUPPORT_USERNAME || "ave_baranov"}, отвечу. 💜`;
 
 export async function handleHelp(ctx) {
   const keyboard = getOpenAppInlineKeyboard();

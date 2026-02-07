@@ -127,6 +127,9 @@ export default function Checkout({ onBack, productId }) {
       <main>
         <div className="card checkout-card" data-aos="fade-up">
           <h2 className="checkout-product-title">{product.title}</h2>
+          {product.description && (
+            <p className="checkout-description">{product.description}</p>
+          )}
           <p className="checkout-eta">Результат: {product.delivery_eta}</p>
           <p className="checkout-price">
             <strong>{product.price_rub} ₽</strong>

@@ -186,6 +186,7 @@ export function createOrder(userId, productId, paymentMethod, productTitle, pric
     telegram_payment_charge_id: null,
     created_at: new Date().toISOString(),
     paid_at: null,
+    result_text: null,
   };
   orders.push(order);
   return { id };
@@ -216,10 +217,20 @@ export function updateOrderPaid(orderId, telegramPaymentChargeId = null) {
   return true;
 }
 
-export function updateOrderStatus(orderId, status) {
+export function updateOrderStatus(orderId, status, resultText = null) {
   const order = getOrder(orderId);
   if (!order) return false;
   order.status = status;
+  if (resultText != null) order.result_text = resultText;
+  return true;
+}
+
+/** Установить текст результата по заказу (описание исполненного заказа) */
+export function setOrderResult(orderId, resultText) {
+  const order = getOrder(orderId);
+  if (!order) return false;
+  order.result_text = resultText;
+  if (order.status === "paid") order.status = "delivered";
   return true;
 }
 

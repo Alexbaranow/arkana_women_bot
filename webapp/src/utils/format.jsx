@@ -1,8 +1,18 @@
 import React from "react";
 
 /**
- * Форматирование текста для отображения
+ * Форматирование текста и дат для отображения
  */
+
+/** Дата для заказов: «7 февр. 2026 г.» */
+export function formatOrderDate(str) {
+  if (!str) return "";
+  return new Date(str).toLocaleDateString("ru-RU", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
 
 /**
  * Рендерит строку с markdown-жирным (**текст**): разбивает по ** и чередует обычный текст и <strong>.

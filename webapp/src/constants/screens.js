@@ -13,6 +13,7 @@ export const ScreenId = Object.freeze({
   CARD_DAY_REQUEST: "card-day-request",
   REVIEWS: "reviews",
   LEAVE_REVIEW: "leaveReview",
+  MY_READINGS: "my-readings",
   STUB: "stub",
 });
 
@@ -28,7 +29,6 @@ export const StubTitles = Object.freeze({
   "heart-present": "Сердце в настоящем",
   "golden-flow": "Золотой поток",
   "body-energy": "Энергия тела",
-  "my-readings": "Мои расклады",
 });
 
 /** Ссылка на iRecommend */

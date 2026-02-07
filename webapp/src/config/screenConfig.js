@@ -11,6 +11,7 @@ import AllSpreads from "../screens/AllSpreads";
 import Numerology from "../screens/Numerology";
 import Checkout from "../screens/Checkout";
 import CardDayRequest from "../screens/CardDayRequest";
+import MyReadings from "../screens/MyReadings";
 import Reviews from "../screens/Reviews";
 import Stub from "../screens/Stub";
 import LeaveReview from "../screens/LeaveReview";
@@ -85,6 +86,10 @@ export function createScreenRegistry(renderer, screenPayload = null) {
     },
     [ScreenId.CARD_DAY_REQUEST]: {
       component: CardDayRequest,
+      getProps: () => ({ onBack: goBack, onNavigate: goTo }),
+    },
+    [ScreenId.MY_READINGS]: {
+      component: MyReadings,
       getProps: () => ({ onBack: goBack, onNavigate: goTo }),
     },
     [ScreenId.REVIEWS]: {

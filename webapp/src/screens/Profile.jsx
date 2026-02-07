@@ -5,12 +5,13 @@ import { useCardDayRequest } from "../context/CardDayRequestContext";
 import { getOnboardingUser, saveOnboardingUser } from "./Onboarding";
 import { getInitData } from "../utils/telegram";
 import { getDisplayNatal } from "../utils/natal";
-import { renderTextWithBold } from "../utils/format";
+import { renderTextWithBold, formatOrderDate } from "../utils/format";
 import { ScreenId } from "../constants/screens";
+import { getOrderStatusLabel } from "../constants/orders";
+import { useMyOrders } from "../hooks/useMyOrders";
+import { getTarotCardImageForNatal, getCardImageForCardDay } from "../constants/tarotCards";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
-const ORDER_STATUS_LABELS = { pending: "Ожидает оплаты", paid: "Оплачен", delivered: "Доставлен" };
-import { getTarotCardImageForNatal, getCardImageForCardDay } from "../constants/tarotCards";
 
 /** В поле даты — только цифры, точки подставляются автоматически (ДД.ММ.ГГГГ) */
 function formatDateInput(value) {
@@ -102,8 +103,7 @@ export default function Profile({ onBack, onNavigate }) {
   const [recalcTimeUnknown, setRecalcTimeUnknown] = useState(false);
   const [recalcError, setRecalcError] = useState(null);
   const [recalcFieldErrors, setRecalcFieldErrors] = useState({});
-  const [orders, setOrders] = useState([]);
-  const [ordersLoading, setOrdersLoading] = useState(false);
+  const { orders, loading: ordersLoading, setOrders } = useMyOrders();
   const [orderSwipeOpenId, setOrderSwipeOpenId] = useState(null);
   const [orderDeleteId, setOrderDeleteId] = useState(null);
   const orderTouchStart = useRef({ x: 0, id: null });
@@ -127,19 +127,6 @@ export default function Profile({ onBack, onNavigate }) {
   useEffect(() => {
     clearJustCalculated();
   }, [clearJustCalculated]);
-
-  useEffect(() => {
-    setOrdersLoading(true);
-    fetch(`${API_URL}/api/my-orders`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ initData: getInitData() }),
-    })
-      .then((res) => res.json())
-      .then((data) => (data.ok && data.orders ? setOrders(data.orders) : []))
-      .catch(() => setOrders([]))
-      .finally(() => setOrdersLoading(false));
-  }, []);
 
   const handleOrderDelete = useCallback(
     async (orderId) => {
@@ -449,10 +436,8 @@ export default function Profile({ onBack, onNavigate }) {
                     <div className="profile-order-item">
                       <span className="profile-order-title">{o.product_title}</span>
                       <span className="profile-order-meta">
-                        {o.price_rub} ₽ · {ORDER_STATUS_LABELS[o.status] || o.status}
-                        {o.paid_at && (
-                          <> · {new Date(o.paid_at).toLocaleDateString("ru-RU")}</>
-                        )}
+                        {o.price_rub} ₽ · {getOrderStatusLabel(o.status)}
+                        {o.paid_at && <> · {formatOrderDate(o.paid_at)}</>}
                       </span>
                     </div>
                     <button

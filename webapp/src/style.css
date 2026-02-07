@@ -791,6 +791,13 @@ input[type="date"] {
   margin: 0 0 4px;
   color: var(--color-text);
 }
+.checkout-description {
+  font-size: 14px;
+  color: var(--color-text-soft);
+  margin: 0 0 12px;
+  white-space: pre-line;
+  line-height: 1.45;
+}
 .checkout-eta {
   font-size: 14px;
   color: var(--color-text-muted);
@@ -861,18 +868,21 @@ input[type="date"] {
   line-height: 1.45;
 }
 
-/* Профиль: список заказов */
+/* Профиль: список заказов (блоки с закруглёнными углами как у .card) */
 .profile-orders-list {
   list-style: none;
   padding: 0;
   margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 .profile-order-swipe {
   overflow: hidden;
-  border-bottom: 1px solid rgba(139, 122, 184, 0.12);
-}
-.profile-order-swipe:last-child {
-  border-bottom: none;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(139, 122, 184, 0.15);
+  background: var(--color-card);
+  box-shadow: var(--shadow-soft);
 }
 .profile-order-swipe-inner {
   display: flex;
@@ -887,10 +897,10 @@ input[type="date"] {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 10px 0;
+  padding: 12px 16px;
   flex: 1;
   min-width: 0;
-  background: var(--color-bg, #fff);
+  background: var(--color-card);
 }
 .profile-order-title {
   font-weight: 500;
@@ -922,6 +932,80 @@ input[type="date"] {
 .profile-order-delete-btn:disabled {
   opacity: 0.8;
   cursor: not-allowed;
+}
+
+/* Экран «Мои расклады» */
+.my-readings-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 40vh;
+  gap: 16px;
+}
+.my-readings-section {
+  margin-bottom: 24px;
+}
+.my-readings-section .profile-section-title {
+  margin-bottom: 12px;
+}
+.my-readings-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.my-readings-order-card {
+  padding: 14px 16px;
+  margin-bottom: 0;
+}
+.my-readings-order-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+.my-readings-order-title {
+  font-weight: 500;
+  color: var(--color-text);
+  flex: 1;
+  min-width: 0;
+}
+.my-readings-order-status {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+.my-readings-order-status-pending {
+  color: var(--color-primary);
+}
+.my-readings-order-status-delivered {
+  color: var(--color-text-muted);
+}
+.my-readings-order-meta {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin: 0 0 8px;
+}
+.my-readings-order-description {
+  font-size: 14px;
+  color: var(--color-text);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(139, 122, 184, 0.12);
+}
+.my-readings-footer {
+  margin-top: 8px;
+}
+.my-readings-footer .btn {
+  width: 100%;
 }
 
 /* Экран запроса карты дня (спиннер + уведомление) */

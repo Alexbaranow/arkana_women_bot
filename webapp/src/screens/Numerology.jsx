@@ -23,7 +23,7 @@ const NUMEROLOGY_ITEMS = [
     title: "Натальная карта",
     shortDesc: "Арканы Таро и астрология по дате рождения",
     icon: "⭐",
-    price: 850,
+    price: 849,
     description:
       "Глубже матрицы: твоя натальная карта через призму Таро и астрологии. Архетипы, ключевые арканы и энергии жизни — что заложено в тебе с рождения, какие темы и сценарии ведут по жизни. Укажи дату, время и место рождения — получи персональный текст о твоей карте. Идеально для тех, кто хочет не просто цифры, а связную историю души и связь с картами.",
     whatIncluded: [
@@ -111,7 +111,9 @@ export default function Numerology({ onBack, onNavigate }) {
 
                 {isExpanded && (
                   <div className="spread-card-body">
-                    <p className="spread-card-description">{item.description}</p>
+                    <p className="spread-card-description">
+                      {item.description}
+                    </p>
                     <p className="spread-card-label">Что входит:</p>
                     <ul className="spread-card-list">
                       {item.whatIncluded.map((entry, i) => (
