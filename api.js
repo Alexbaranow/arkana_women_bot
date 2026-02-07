@@ -196,7 +196,10 @@ app.post("/api/request-stars-invoice", async (req, res) => {
 
   const bot = req.app.get("bot");
   if (!bot) {
-    return res.status(500).json({ error: "Бот не подключён к API" });
+    return res.status(503).json({
+      error:
+        "Оплата Stars недоступна: API запущен без бота. Запускайте приложение через node bot.js (бот и API одним процессом).",
+    });
   }
 
   try {
@@ -263,16 +266,24 @@ app.post("/api/create-external-order", async (req, res) => {
   }
 
   // Иначе — ссылка на внешнюю страницу оплаты (если настроена)
-  const paymentUrl = externalUrl ? `${externalUrl}?order_id=${orderId}` : null;
-  return res.json({
-    ok: true,
-    orderId,
-    paymentUrl,
-    amount: product.price_rub,
-    productTitle: product.title,
-    paymentType: "link",
-    message:
-      "После оплаты по ссылке результат придёт в этот чат. Сохрани номер заказа.",
+  const paymentUrl = externalUrl.trim() ? `${externalUrl.trim()}?order_id=${orderId}` : null;
+  if (paymentUrl) {
+    return res.json({
+      ok: true,
+      orderId,
+      paymentUrl,
+      amount: product.price_rub,
+      productTitle: product.title,
+      paymentType: "link",
+      message:
+        "После оплаты по ссылке результат придёт в этот чат. Сохрани номер заказа.",
+    });
+  }
+
+  // Реквизиты и ссылка не настроены — сообщаем администратору
+  return res.status(503).json({
+    error:
+      "Оплата картой/СБП не настроена. Добавьте в .env на сервере PAYMENT_CARD_DESCRIPTION (номер карты) и/или PAYMENT_SBP_PHONE (номер для СБП).",
   });
 });
 

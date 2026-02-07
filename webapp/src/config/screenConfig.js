@@ -52,6 +52,9 @@ export function createScreenRegistry(renderer, screenPayload = null) {
           }
           if (Object.values(ScreenId).includes(next)) {
             goTo(next);
+          } else if (next === "card-day") {
+            // Карта дня бесплатная — после сбора данных ведём в профиль (без оплаты)
+            goTo(ScreenId.PROFILE);
           } else {
             goTo(ScreenId.CHECKOUT, { productId: next });
           }

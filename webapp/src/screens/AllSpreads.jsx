@@ -111,6 +111,15 @@ export default function AllSpreads({ onBack, onNavigate }) {
     e.stopPropagation();
     const productId = spread.id;
     if (!productId) return;
+    // Карта дня — бесплатно, без оплаты; после онбординга ведём в профиль
+    if (productId === "card-day") {
+      if (isUserRegistered()) {
+        onNavigate(ScreenId.PROFILE);
+      } else {
+        onNavigate(ScreenId.ONBOARDING, { next: productId });
+      }
+      return;
+    }
     if (isUserRegistered()) {
       onNavigate(ScreenId.CHECKOUT, { productId });
     } else {
@@ -176,9 +185,13 @@ export default function AllSpreads({ onBack, onNavigate }) {
                     <span className="menu-title">{s.title}</span>
                     <span className="menu-desc">{s.shortDesc}</span>
                   </div>
-                  {s.price != null && (
+                  {s.price != null ? (
                     <span className="menu-price spread-card-price">
                       {s.price} ₽
+                    </span>
+                  ) : (
+                    <span className="menu-price spread-card-price" style={{ color: "var(--color-primary)" }}>
+                      Бесплатно
                     </span>
                   )}
                   <span
@@ -213,7 +226,7 @@ export default function AllSpreads({ onBack, onNavigate }) {
                       className="btn btn-primary spread-card-btn"
                       onClick={(e) => handleOrder(e, s)}
                     >
-                      Заказать расклад
+                      {s.id === "card-day" ? "Получить карту дня" : "Заказать расклад"}
                     </button>
                   </div>
                 )}
