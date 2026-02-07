@@ -5,14 +5,19 @@ import { getInitData } from "../utils/telegram";
 import { ScreenId } from "../constants/screens";
 import { getTarotCardImageForNatal } from "../constants/tarotCards";
 
-/** В поле даты — только цифры и разделители . / - */
-function filterDateInput(value) {
-  return value.replace(/[^\d./\-]/g, "");
+/** В поле даты — только цифры, точки подставляются автоматически (ДД.ММ.ГГГГ) */
+function formatDateInput(value) {
+  const digits = value.replace(/\D/g, "").slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}.${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}.${digits.slice(2, 4)}.${digits.slice(4)}`;
 }
 
-/** В поле времени — только цифры и : . */
-function filterTimeInput(value) {
-  return value.replace(/[^\d.:]/g, "");
+/** В поле времени — только цифры, двоеточие подставляется автоматически (ЧЧ:ММ) */
+function formatTimeInput(value) {
+  const digits = value.replace(/\D/g, "").slice(0, 4);
+  if (digits.length <= 2) return digits;
+  return `${digits.slice(0, 2)}:${digits.slice(2)}`;
 }
 
 /** В текстовых полях — только буквы, пробелы и дефис */
@@ -387,7 +392,7 @@ export default function Profile({ onBack, onNavigate }) {
           )}
           {(showRecalcForm || (!natalResult && hasNatalData)) && (
             <>
-              {recalcError && (
+              {recalcError && !isCalculating && (
                 <p
                   className="free-tarot-error"
                   role="alert"
@@ -396,70 +401,72 @@ export default function Profile({ onBack, onNavigate }) {
                   {recalcError}
                 </p>
               )}
-              <div className="profile-recalc-fields">
-                <label className="review-label">
-                  <span className="subtitle">Дата рождения</span>
-                  <input
-                    ref={recalcDateRef}
-                    type="text"
-                    className={`profile-recalc-input review-textarea ${recalcFieldErrors.dateOfBirth ? "input-invalid" : ""}`}
-                    value={/^\d{4}-\d{2}-\d{2}$/.test(recalcDate) ? formatDateForInput(recalcDate) : recalcDate}
-                    onChange={(e) => {
-                      setRecalcDate(filterDateInput(e.target.value));
-                      if (recalcFieldErrors.dateOfBirth) setRecalcFieldErrors((p) => ({ ...p, dateOfBirth: false }));
-                    }}
-                    placeholder="ДД.ММ.ГГГГ (например 16.02.1992)"
-                  />
-                </label>
-                <label className="review-label">
-                  <span className="subtitle">Время рождения</span>
-                  {!recalcTimeUnknown && (
+              {!isCalculating && (
+                <div className="profile-recalc-fields">
+                  <label className="review-label">
+                    <span className="subtitle">Дата рождения</span>
                     <input
-                      ref={recalcTimeRef}
+                      ref={recalcDateRef}
                       type="text"
-                      className={`profile-recalc-input review-textarea ${recalcFieldErrors.timeOfBirth ? "input-invalid" : ""}`}
-                      value={recalcTime}
+                      className={`profile-recalc-input review-textarea ${recalcFieldErrors.dateOfBirth ? "input-invalid" : ""}`}
+                      value={/^\d{4}-\d{2}-\d{2}$/.test(recalcDate) ? formatDateForInput(recalcDate) : recalcDate}
                       onChange={(e) => {
-                        setRecalcTime(filterTimeInput(e.target.value));
-                        if (recalcFieldErrors.timeOfBirth) setRecalcFieldErrors((p) => ({ ...p, timeOfBirth: false }));
+                        setRecalcDate(formatDateInput(e.target.value));
+                        if (recalcFieldErrors.dateOfBirth) setRecalcFieldErrors((p) => ({ ...p, dateOfBirth: false }));
                       }}
-                      placeholder="ЧЧ:ММ (например 16:30)"
+                      placeholder="ДД.ММ.ГГГГ (например 16.02.1992)"
                     />
-                  )}
-                  <label className="onboarding-checkbox-label">
-                    <input
-                      type="checkbox"
-                      className="onboarding-checkbox"
-                      checked={recalcTimeUnknown}
-                      onChange={(e) => {
-                        const checked = e.target.checked;
-                        setRecalcTimeUnknown(checked);
-                        if (checked) {
-                          setRecalcTime("");
-                          setRecalcFieldErrors((p) => ({ ...p, timeOfBirth: false }));
-                        }
-                      }}
-                    />
-                    <span className="onboarding-checkbox-text">Не знаю</span>
                   </label>
-                </label>
-                <label className="review-label">
-                  <span className="subtitle">
-                    Место рождения (город или страна)
-                  </span>
-                  <input
-                    ref={recalcPlaceRef}
-                    type="text"
-                    className={`profile-recalc-input review-textarea ${recalcFieldErrors.placeOfBirth ? "input-invalid" : ""}`}
-                    value={recalcPlace}
-                    onChange={(e) => {
-                      setRecalcPlace(filterLettersInput(e.target.value));
-                      if (recalcFieldErrors.placeOfBirth) setRecalcFieldErrors((p) => ({ ...p, placeOfBirth: false }));
-                    }}
-                    placeholder="Например: Москва"
-                  />
-                </label>
-              </div>
+                  <label className="review-label">
+                    <span className="subtitle">Время рождения</span>
+                    {!recalcTimeUnknown && (
+                      <input
+                        ref={recalcTimeRef}
+                        type="text"
+                        className={`profile-recalc-input review-textarea ${recalcFieldErrors.timeOfBirth ? "input-invalid" : ""}`}
+                        value={recalcTime}
+                        onChange={(e) => {
+                          setRecalcTime(formatTimeInput(e.target.value));
+                          if (recalcFieldErrors.timeOfBirth) setRecalcFieldErrors((p) => ({ ...p, timeOfBirth: false }));
+                        }}
+                        placeholder="ЧЧ:ММ (например 16:30)"
+                      />
+                    )}
+                    <label className="onboarding-checkbox-label">
+                      <input
+                        type="checkbox"
+                        className="onboarding-checkbox"
+                        checked={recalcTimeUnknown}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setRecalcTimeUnknown(checked);
+                          if (checked) {
+                            setRecalcTime("");
+                            setRecalcFieldErrors((p) => ({ ...p, timeOfBirth: false }));
+                          }
+                        }}
+                      />
+                      <span className="onboarding-checkbox-text">Не знаю</span>
+                    </label>
+                  </label>
+                  <label className="review-label">
+                    <span className="subtitle">
+                      Место рождения (город или страна)
+                    </span>
+                    <input
+                      ref={recalcPlaceRef}
+                      type="text"
+                      className={`profile-recalc-input review-textarea ${recalcFieldErrors.placeOfBirth ? "input-invalid" : ""}`}
+                      value={recalcPlace}
+                      onChange={(e) => {
+                        setRecalcPlace(filterLettersInput(e.target.value));
+                        if (recalcFieldErrors.placeOfBirth) setRecalcFieldErrors((p) => ({ ...p, placeOfBirth: false }));
+                      }}
+                      placeholder="Например: Москва"
+                    />
+                  </label>
+                </div>
+              )}
               <button
                 type="button"
                 className="btn btn-primary profile-recalc-btn"

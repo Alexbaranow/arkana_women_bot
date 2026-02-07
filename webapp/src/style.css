@@ -27,6 +27,12 @@
   padding: 0;
 }
 
+/* Видимый курсор (каретка) во всех полях ввода */
+input,
+textarea {
+  caret-color: var(--color-primary-deep);
+}
+
 /* Не используем overflow-x: hidden на html/body — ломает вертикальную прокрутку в WebView */
 
 #root {
@@ -509,6 +515,7 @@ h1 {
   font-size: 16px;
   resize: vertical;
   min-height: 100px;
+  caret-color: var(--color-primary-deep);
 }
 
 .review-textarea:focus {
@@ -547,6 +554,7 @@ input.input-invalid,
 .onboarding-input {
   min-height: 48px;
   resize: none;
+  caret-color: var(--color-primary-deep);
 }
 
 /* Чекбокс «Не знаю» для времени рождения */
@@ -777,6 +785,7 @@ input[type="date"] {
   font-size: 16px;
   resize: none;
   box-sizing: border-box;
+  caret-color: var(--color-primary-deep);
 }
 
 .profile-recalc-input:focus {

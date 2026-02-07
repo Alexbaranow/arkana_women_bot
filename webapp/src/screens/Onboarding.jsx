@@ -2,14 +2,19 @@ import { useState, useRef, useEffect } from "react";
 import { getInitData } from "../utils/telegram";
 import { useNatalChart } from "../context/NatalChartContext";
 
-/** В поле даты — только цифры и разделители . / - */
-function filterDateInput(value) {
-  return value.replace(/[^\d./\-]/g, "");
+/** В поле даты — только цифры, точки подставляются автоматически (ДД.ММ.ГГГГ) */
+function formatDateInput(value) {
+  const digits = value.replace(/\D/g, "").slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}.${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}.${digits.slice(2, 4)}.${digits.slice(4)}`;
 }
 
-/** В поле времени — только цифры и : . */
-function filterTimeInput(value) {
-  return value.replace(/[^\d.:]/g, "");
+/** В поле времени — только цифры, двоеточие подставляется автоматически (ЧЧ:ММ) */
+function formatTimeInput(value) {
+  const digits = value.replace(/\D/g, "").slice(0, 4);
+  if (digits.length <= 2) return digits;
+  return `${digits.slice(0, 2)}:${digits.slice(2)}`;
 }
 
 /** В текстовых полях (имя, место) — только буквы, пробелы и дефис */
@@ -263,7 +268,7 @@ export default function Onboarding({ onBack, onComplete }) {
                 className={`review-textarea onboarding-input ${fieldErrors.dateOfBirth ? "input-invalid" : ""}`}
                 value={/^\d{4}-\d{2}-\d{2}$/.test(dateOfBirth) ? formatDateForInput(dateOfBirth) : dateOfBirth}
                 onChange={(e) => {
-                  setDateOfBirth(filterDateInput(e.target.value));
+                  setDateOfBirth(formatDateInput(e.target.value));
                   if (fieldErrors.dateOfBirth) setFieldErrors((p) => ({ ...p, dateOfBirth: false }));
                 }}
                 placeholder="ДД.ММ.ГГГГ (например 16.02.1992)"
@@ -282,7 +287,7 @@ export default function Onboarding({ onBack, onComplete }) {
                   className={`review-textarea onboarding-input ${fieldErrors.timeOfBirth ? "input-invalid" : ""}`}
                   value={timeOfBirth}
                   onChange={(e) => {
-                    setTimeOfBirth(filterTimeInput(e.target.value));
+                    setTimeOfBirth(formatTimeInput(e.target.value));
                     if (fieldErrors.timeOfBirth) setFieldErrors((p) => ({ ...p, timeOfBirth: false }));
                   }}
                   placeholder="ЧЧ:ММ (например 16:30)"
