@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { MoonLoader } from "react-spinners";
+import CardShuffleLoader from "../components/CardShuffleLoader";
 import { useCardDayRequest } from "../context/CardDayRequestContext";
 import { useNatalChart } from "../context/NatalChartContext";
 import { getOnboardingUser } from "./Onboarding";
@@ -135,12 +135,7 @@ export default function CardDayRequest({ onBack, onNavigate }) {
         {(loading || requestingNatal) && (
           <>
             <div className="card-day-request-spinner">
-              <MoonLoader
-                color="var(--color-primary, #7c3aed)"
-                size={56}
-                speedMultiplier={0.9}
-                aria-label="Загрузка"
-              />
+              <CardShuffleLoader size={72} aria-label="Загрузка" />
             </div>
             <p className="card-day-request-notice" role="status">
               {requestingNatal

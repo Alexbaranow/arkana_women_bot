@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { MoonLoader } from "react-spinners";
+import CardShuffleLoader from "../components/CardShuffleLoader";
 import { ScreenId } from "../constants/screens";
 import { getOrderStatusLabel } from "../constants/orders";
 import { formatOrderDate } from "../utils/format";
@@ -28,7 +28,7 @@ export default function MyReadings({ onBack, onNavigate }) {
       <main>
         {loading ? (
           <div className="my-readings-loading">
-            <MoonLoader size={36} color="var(--color-primary)" />
+            <CardShuffleLoader size={48} />
             <p className="profile-subtext">Загрузка…</p>
           </div>
         ) : (

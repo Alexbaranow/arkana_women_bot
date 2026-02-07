@@ -15,37 +15,37 @@ export const PRODUCTS = [
   {
     id: "three-cards",
     title: "Три карты",
-    price_rub: 299,
+    price_rub: 290,
     delivery_eta: "через 2 часа",
   },
   {
     id: "heart-present",
     title: "Сердце в настоящем",
-    price_rub: 699,
+    price_rub: 690,
     delivery_eta: "через 2 часа",
   },
   {
     id: "golden-flow",
     title: "Золотой поток",
-    price_rub: 699,
+    price_rub: 690,
     delivery_eta: "через 2 часа",
   },
   {
     id: "body-energy",
     title: "Энергия тела",
-    price_rub: 699,
+    price_rub: 690,
     delivery_eta: "через 2 часа",
   },
   {
     id: "fate-matrix",
     title: "Матрица судьбы",
-    price_rub: 299,
+    price_rub: 290,
     delivery_eta: "сразу после оплаты",
   },
   {
     id: "natal-chart",
     title: "Натальная карта",
-    price_rub: 849,
+    price_rub: 790,
     delivery_eta: "в течение 24 часов",
   },
 ];

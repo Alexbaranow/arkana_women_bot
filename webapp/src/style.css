@@ -158,6 +158,29 @@ h1 {
   justify-content: center;
 }
 
+/* Индикатор загрузки «перетасовка карт» */
+.cards-shuffle-loader {
+  color: var(--color-primary, #7c3aed);
+}
+.cards-shuffle-loader svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+@keyframes cards-shuffle-move {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(-4px) rotate(2deg); }
+}
+.cards-shuffle-card {
+  transform-origin: center center;
+  animation: cards-shuffle-move 1.2s ease-in-out infinite;
+}
+.cards-shuffle-card-2 { animation-delay: 0.2s; }
+.cards-shuffle-card-3 { animation-delay: 0.4s; }
+.spread-card-btn-requesting .cards-shuffle-loader {
+  color: rgba(255, 255, 255, 0.95);
+}
+
 .app-debug-btn {
   width: 36px;
   height: 36px;

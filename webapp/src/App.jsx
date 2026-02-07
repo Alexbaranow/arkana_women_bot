@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import AOS from "aos";
-import { MoonLoader } from "react-spinners";
+import CardShuffleLoader from "./components/CardShuffleLoader";
 import { useNavigation } from "./hooks/useNavigation";
 import { useNatalChart } from "./context/NatalChartContext";
 import { useCardDayRequest } from "./context/CardDayRequestContext";
@@ -57,10 +57,16 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ initData: getInitData() }),
       });
-      localStorage.removeItem("arkana_user");
-      localStorage.removeItem("arkana_natal_result");
-      window.location.reload();
-    } catch {}
+    } catch {
+      // игнорируем ошибку API — сбрасываем локальные данные в любом случае
+    }
+    // Сбрасываем все данные приложения (только localStorage)
+    Object.keys(localStorage)
+      .filter((k) => k.startsWith("arkana_"))
+      .forEach((k) => localStorage.removeItem(k));
+    // Редирект в начало приложения без query/hash — после reload откроется Landing
+    const url = `${window.location.origin}${window.location.pathname}`;
+    window.location.replace(url);
   };
 
   return (
@@ -73,16 +79,8 @@ export default function App() {
           </div>
           <div className="app-topbar-right">
             {isCalculating && (
-              <div
-                className="app-topbar-spinner"
-                role="status"
-                aria-label="Рассчитываем асцендент и натальную карту"
-              >
-                <MoonLoader
-                  color="var(--color-primary, #7c3aed)"
-                  size={28}
-                  speedMultiplier={0.9}
-                />
+              <div className="app-topbar-spinner">
+                <CardShuffleLoader size={28} aria-label="Рассчитываем асцендент и натальную карту" />
               </div>
             )}
             <button

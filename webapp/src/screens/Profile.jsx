@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
-import { MoonLoader } from "react-spinners";
+import CardShuffleLoader from "../components/CardShuffleLoader";
 import { useNatalChart } from "../context/NatalChartContext";
 import { useCardDayRequest } from "../context/CardDayRequestContext";
 import { getOnboardingUser, saveOnboardingUser } from "./Onboarding";
@@ -286,12 +286,7 @@ export default function Profile({ onBack, onNavigate }) {
           ) : isCardDayRequesting ? (
             <div className="profile-card-of-the-day-requesting" role="status">
               <span className="profile-card-of-the-day-empty">Идёт расчёт</span>
-              <MoonLoader
-                color="var(--color-primary, #7c3aed)"
-                size={28}
-                speedMultiplier={0.9}
-                aria-hidden
-              />
+              <CardShuffleLoader size={28} aria-label="Идёт расчёт" />
             </div>
           ) : (
             <>
