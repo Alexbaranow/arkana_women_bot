@@ -219,14 +219,15 @@ app.post("/api/request-stars-invoice", async (req, res) => {
   }
 
   try {
-    await bot.api.sendInvoice(userId, {
-      title: product.title,
-      description: `${product.title} · Результат ${product.delivery_eta}`,
-      payload: `order_${orderId}`,
-      currency: "XTR",
-      prices: [{ label: product.title, amount: priceStars }],
-      provider_token: "",
-    });
+    await bot.api.sendInvoice(
+      userId,
+      product.title,
+      `${product.title} · Результат ${product.delivery_eta}`,
+      `order_${orderId}`,
+      "XTR",
+      [{ label: product.title, amount: priceStars }],
+      { provider_token: "" }
+    );
     return res.json({
       ok: true,
       orderId,
