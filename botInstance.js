@@ -16,6 +16,7 @@ import {
   handleStartButton,
   handleHelp,
   handlePromptToStart,
+  getAppInlineKeyboardForScreen,
 } from "./handlers/start.js";
 import { startOnboarding } from "./handlers/onboarding.js";
 import { handleMainCallback } from "./handlers/main.js";
@@ -62,6 +63,44 @@ bot.command("start", async (ctx) => {
 });
 bot.command("help", handleHelp);
 
+/** Команды меню — открывают приложение на нужном экране */
+bot.command("app", async (ctx) => {
+  const kb = getAppInlineKeyboardForScreen();
+  await ctx.reply("🔮 Открыть приложение", {
+    reply_markup: kb ?? undefined,
+  });
+});
+bot.command("free", async (ctx) => {
+  const kb = getAppInlineKeyboardForScreen("freeTarot");
+  await ctx.reply("✨ Бесплатный вопрос таро", {
+    reply_markup: kb ?? undefined,
+  });
+});
+bot.command("spreads", async (ctx) => {
+  const kb = getAppInlineKeyboardForScreen("all-spreads");
+  await ctx.reply("📋 Все расклады", {
+    reply_markup: kb ?? undefined,
+  });
+});
+bot.command("card3", async (ctx) => {
+  const kb = getAppInlineKeyboardForScreen("card-3days");
+  await ctx.reply("🪙 Карта дня на 3 дня (100 ₽)", {
+    reply_markup: kb ?? undefined,
+  });
+});
+bot.command("matrix", async (ctx) => {
+  const kb = getAppInlineKeyboardForScreen("fate-matrix");
+  await ctx.reply("🌌 Матрица судьбы / натальная карта", {
+    reply_markup: kb ?? undefined,
+  });
+});
+bot.command("my", async (ctx) => {
+  const kb = getAppInlineKeyboardForScreen("my-readings");
+  await ctx.reply("📂 Мои расклады", {
+    reply_markup: kb ?? undefined,
+  });
+});
+
 // === Бесплатный вопрос к нейросети (ожидание текста вопроса) ===
 // === Онбординг: перехват сообщений при сборе данных ===
 bot.on("message:text", async (ctx, next) => {
@@ -103,7 +142,13 @@ bot.catch((err) => {
 async function setupCommands() {
   await bot.api.setMyCommands([
     { command: "start", description: "Начать · Главное меню" },
-    { command: "help", description: "Помощь · Как пользоваться" },
+    { command: "help", description: "Помощь" },
+    { command: "app", description: "🔮 Открыть приложение" },
+    { command: "free", description: "✨ Бесплатный вопрос таро" },
+    { command: "spreads", description: "📋 Все расклады" },
+    { command: "card3", description: "🪙 Карта дня на 3 дня" },
+    { command: "matrix", description: "🌌 Матрица судьбы" },
+    { command: "my", description: "📂 Мои расклады" },
   ]);
 }
 

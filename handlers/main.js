@@ -44,9 +44,6 @@ export async function handleMainCallback(ctx) {
     case "my_readings":
       await handleMyReadings(ctx);
       break;
-    case "status":
-      await ctx.reply("Пока пусто.");
-      break;
     default: {
       const keyboard = getOpenAppInlineKeyboard();
       await ctx.reply(

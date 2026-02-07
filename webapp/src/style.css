@@ -867,15 +867,30 @@ input[type="date"] {
   padding: 0;
   margin: 0;
 }
+.profile-order-swipe {
+  overflow: hidden;
+  border-bottom: 1px solid rgba(139, 122, 184, 0.12);
+}
+.profile-order-swipe:last-child {
+  border-bottom: none;
+}
+.profile-order-swipe-inner {
+  display: flex;
+  align-items: stretch;
+  width: calc(100% + 72px);
+  transition: transform 0.2s ease-out;
+}
+.profile-order-swipe-open.profile-order-swipe-inner {
+  transform: translateX(-72px);
+}
 .profile-order-item {
   display: flex;
   flex-direction: column;
   gap: 2px;
   padding: 10px 0;
-  border-bottom: 1px solid rgba(139, 122, 184, 0.12);
-}
-.profile-order-item:last-child {
-  border-bottom: none;
+  flex: 1;
+  min-width: 0;
+  background: var(--color-bg, #fff);
 }
 .profile-order-title {
   font-weight: 500;
@@ -884,6 +899,29 @@ input[type="date"] {
 .profile-order-meta {
   font-size: 13px;
   color: var(--color-text-muted);
+}
+.profile-order-delete-btn {
+  flex: 0 0 72px;
+  width: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+  background: #b85c58;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  touch-action: none;
+}
+.profile-order-delete-btn:hover:not(:disabled) {
+  background: #a04a46;
+}
+.profile-order-delete-btn:disabled {
+  opacity: 0.8;
+  cursor: not-allowed;
 }
 
 /* Экран запроса карты дня (спиннер + уведомление) */

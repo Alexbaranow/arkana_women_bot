@@ -6,6 +6,7 @@ import {
   useFreeQuestion,
   createOrder,
   getUserOrders,
+  deleteOrder,
   saveCardOfTheDay,
   getCardOfTheDay,
   deleteCardOfTheDay,
@@ -28,6 +29,21 @@ app.use((req, res, next) => {
 const isDev = process.env.NODE_ENV !== "production";
 const DEV_USER_ID =
   Number(process.env.DEV_USER_ID) || Number(process.env.ADMIN_ID) || 0;
+
+const RATE_LIMIT_MESSAGE =
+  "Слишком много запросов к звёздам одновременно. Подожди минуту и попробуй снова.";
+
+function isRateLimitError(err) {
+  return err?.status === 429 || err?.code === 429;
+}
+
+function sendAIError(res, err, defaultMessage) {
+  if (isRateLimitError(err)) {
+    return res.status(429).json({ error: RATE_LIMIT_MESSAGE });
+  }
+  console.error("API AI error:", err?.message || err);
+  return res.status(500).json({ error: err?.message || defaultMessage });
+}
 
 /** Извлечь Telegram user id из initData (для оплаты и заказов) */
 function getUserIdFromInitData(initData, res) {
@@ -108,10 +124,11 @@ app.post("/api/free-question", async (req, res) => {
     useFreeQuestion(userId);
     return res.json({ answer });
   } catch (err) {
-    console.error("API free question error:", err);
-    return res.status(500).json({
-      error: "Не удалось получить ответ. Попробуй позже или короче вопрос.",
-    });
+    return sendAIError(
+      res,
+      err,
+      "Не удалось получить ответ. Попробуй позже или короче вопрос."
+    );
   }
 });
 
@@ -161,10 +178,7 @@ app.post("/api/calculate-ascendant", async (req, res) => {
     );
     return res.json({ ok: true, ascendant });
   } catch (err) {
-    console.error("API calculate-ascendant error:", err);
-    return res
-      .status(500)
-      .json({ error: err?.message || "Не удалось рассчитать асцендент." });
+    return sendAIError(res, err, "Не удалось рассчитать асцендент.");
   }
 });
 
@@ -180,10 +194,7 @@ app.post("/api/calculate-natal-chart", async (req, res) => {
     );
     return res.json({ ok: true, natalChart });
   } catch (err) {
-    console.error("API calculate-natal-chart error:", err);
-    return res.status(500).json({
-      error: err?.message || "Не удалось рассчитать натальную карту.",
-    });
+    return sendAIError(res, err, "Не удалось рассчитать натальную карту.");
   }
 });
 
@@ -325,6 +336,23 @@ app.post("/api/my-orders", async (req, res) => {
   return res.json({ ok: true, orders: list });
 });
 
+/** POST /api/delete-order — удалить заказ из «Мои заказы» (только свой) */
+app.post("/api/delete-order", async (req, res) => {
+  const userId = getUserIdFromInitData(req.body?.initData, res);
+  if (userId == null) return;
+
+  const orderId = req.body?.orderId != null ? Number(req.body.orderId) : NaN;
+  if (Number.isNaN(orderId)) {
+    return res.status(400).json({ error: "Нужен orderId" });
+  }
+
+  const deleted = deleteOrder(orderId, userId);
+  if (!deleted) {
+    return res.status(404).json({ error: "Заказ не найден или уже удалён" });
+  }
+  return res.json({ ok: true });
+});
+
 // --- Карта дня (бесплатная, до 24:00 по Москве) ---
 
 /** POST /api/card-of-the-day — запросить карту дня (генерация в фоне, ответ сразу) */
@@ -365,9 +393,12 @@ app.post("/api/card-of-the-day", async (req, res) => {
       dateKey: entry.date_key,
     });
   } catch (err) {
+    if (isRateLimitError(err)) {
+      return res.status(429).json({ error: RATE_LIMIT_MESSAGE });
+    }
     console.error("card-of-the-day error:", err?.message);
     const payload = {
-      error: "Не удалось сгенерировать карту дня. Попробуй позже.",
+      error: err?.message || "Не удалось сгенерировать карту дня. Попробуй позже.",
     };
     if (isDev) payload.serverError = err?.message || String(err);
     return res.status(500).json(payload);

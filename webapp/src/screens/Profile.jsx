@@ -104,6 +104,9 @@ export default function Profile({ onBack, onNavigate }) {
   const [recalcFieldErrors, setRecalcFieldErrors] = useState({});
   const [orders, setOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
+  const [orderSwipeOpenId, setOrderSwipeOpenId] = useState(null);
+  const [orderDeleteId, setOrderDeleteId] = useState(null);
+  const orderTouchStart = useRef({ x: 0, id: null });
   const [cardOfTheDayLoading, setCardOfTheDayLoading] = useState(true);
   const recalcDateRef = useRef(null);
   const recalcTimeRef = useRef(null);
@@ -137,6 +140,29 @@ export default function Profile({ onBack, onNavigate }) {
       .catch(() => setOrders([]))
       .finally(() => setOrdersLoading(false));
   }, []);
+
+  const handleOrderDelete = useCallback(
+    async (orderId) => {
+      setOrderDeleteId(orderId);
+      try {
+        const res = await fetch(`${API_URL}/api/delete-order`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ initData: getInitData(), orderId }),
+        });
+        const data = await res.json();
+        if (data.ok) {
+          setOrders((prev) => prev.filter((o) => o.id !== orderId));
+          setOrderSwipeOpenId(null);
+        }
+      } catch {
+        // ignore
+      } finally {
+        setOrderDeleteId(null);
+      }
+    },
+    []
+  );
 
   const fetchCardOfTheDay = useCallback(() => {
     setCardOfTheDayLoading(true);
@@ -397,14 +423,48 @@ export default function Profile({ onBack, onNavigate }) {
           ) : (
             <ul className="profile-orders-list">
               {orders.map((o) => (
-                <li key={o.id} className="profile-order-item">
-                  <span className="profile-order-title">{o.product_title}</span>
-                  <span className="profile-order-meta">
-                    {o.price_rub} ₽ · {ORDER_STATUS_LABELS[o.status] || o.status}
-                    {o.paid_at && (
-                      <> · {new Date(o.paid_at).toLocaleDateString("ru-RU")}</>
-                    )}
-                  </span>
+                <li
+                  key={o.id}
+                  className="profile-order-swipe"
+                  onTouchStart={(e) => {
+                    orderTouchStart.current = {
+                      x: e.touches[0].clientX,
+                      id: o.id,
+                    };
+                  }}
+                  onTouchMove={(e) => {
+                    const { x, id } = orderTouchStart.current;
+                    if (id !== o.id) return;
+                    const dx = x - e.touches[0].clientX;
+                    if (dx > 50) setOrderSwipeOpenId(o.id);
+                    else if (dx < -30) setOrderSwipeOpenId(null);
+                  }}
+                  onTouchEnd={() => {
+                    orderTouchStart.current = { x: 0, id: null };
+                  }}
+                >
+                  <div
+                    className={`profile-order-swipe-inner ${orderSwipeOpenId === o.id ? "profile-order-swipe-open" : ""}`}
+                  >
+                    <div className="profile-order-item">
+                      <span className="profile-order-title">{o.product_title}</span>
+                      <span className="profile-order-meta">
+                        {o.price_rub} ₽ · {ORDER_STATUS_LABELS[o.status] || o.status}
+                        {o.paid_at && (
+                          <> · {new Date(o.paid_at).toLocaleDateString("ru-RU")}</>
+                        )}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className="profile-order-delete-btn"
+                      onClick={() => handleOrderDelete(o.id)}
+                      disabled={orderDeleteId === o.id}
+                      aria-label="Удалить заказ"
+                    >
+                      {orderDeleteId === o.id ? "…" : "Удалить"}
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>

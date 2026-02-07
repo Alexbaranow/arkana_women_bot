@@ -223,6 +223,15 @@ export function updateOrderStatus(orderId, status) {
   return true;
 }
 
+/** Удалить заказ; только если он принадлежит пользователю */
+export function deleteOrder(orderId, userId) {
+  const id = Number(orderId);
+  const idx = orders.findIndex((o) => o.id === id && o.user_id === userId);
+  if (idx === -1) return false;
+  orders.splice(idx, 1);
+  return true;
+}
+
 // === Отзывы ===
 
 export function getVisibleReviews(limit = 10) {
