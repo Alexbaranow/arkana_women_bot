@@ -126,7 +126,6 @@ export default function Profile({ onBack, onNavigate }) {
   }, [clearJustCalculated]);
 
   useEffect(() => {
-    if (!API_URL) return;
     setOrdersLoading(true);
     fetch(`${API_URL}/api/my-orders`, {
       method: "POST",
@@ -140,10 +139,6 @@ export default function Profile({ onBack, onNavigate }) {
   }, []);
 
   const fetchCardOfTheDay = useCallback(() => {
-    if (!API_URL) {
-      setCardOfTheDayLoading(false);
-      return;
-    }
     setCardOfTheDayLoading(true);
     fetch(`${API_URL}/api/card-of-the-day/get`, {
       method: "POST",
