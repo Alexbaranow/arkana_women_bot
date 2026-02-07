@@ -1,11 +1,14 @@
 import express from "express";
 import { validate, parse } from "@tma.js/init-data-node";
-import { getAnswer, fetchAscendant, fetchNatalChart } from "./services/ai.js";
+import { getAnswer, fetchAscendant, fetchNatalChart, getCardOfTheDayContent } from "./services/ai.js";
 import {
   hasFreeQuestion,
   useFreeQuestion,
   createOrder,
   getUserOrders,
+  saveCardOfTheDay,
+  getCardOfTheDay,
+  deleteExpiredCardsOfTheDay,
 } from "./db.js";
 import { getProduct, rubToStars } from "./config/products.js";
 
@@ -304,6 +307,73 @@ app.post("/api/my-orders", async (req, res) => {
   }));
 
   return res.json({ ok: true, orders: list });
+});
+
+// --- Карта дня (бесплатная, до 24:00 по Москве) ---
+
+/** POST /api/card-of-the-day — запросить карту дня (генерация в фоне, ответ сразу) */
+app.post("/api/card-of-the-day", async (req, res) => {
+  const userId = getUserIdFromInitData(req.body?.initData, res);
+  if (userId == null) return;
+
+  const ascendant = req.body?.ascendant;
+  const natalChart = req.body?.natalChart;
+  const hasNatal =
+    (ascendant && (ascendant.sign || ascendant.description)) ||
+    (natalChart && String(natalChart).trim());
+
+  if (!hasNatal) {
+    return res.status(400).json({
+      error:
+        "Для более точной карты дня сначала рассчитай асцендент и натальную карту в личном кабинете (раздел «Асцендент и натальная карта»).",
+      code: "NEED_NATAL",
+    });
+  }
+
+  try {
+    const text = await getCardOfTheDayContent({
+      userName: req.body?.userName?.trim() || null,
+      ascendant:
+        ascendant && (ascendant.sign || ascendant.description)
+          ? { sign: ascendant.sign || "", description: ascendant.description || "" }
+          : null,
+      natalChart: natalChart && String(natalChart).trim() ? natalChart : null,
+      tarotCardName: req.body?.tarotCardName?.trim() || null,
+    });
+    const entry = saveCardOfTheDay(userId, text);
+    deleteExpiredCardsOfTheDay();
+    return res.json({
+      ok: true,
+      text: entry.text,
+      expiresAt: entry.expires_at,
+      dateKey: entry.date_key,
+    });
+  } catch (err) {
+    console.error("card-of-the-day error:", err?.message);
+    return res.status(500).json({
+      error: "Не удалось сгенерировать карту дня. Попробуй позже.",
+    });
+  }
+});
+
+/** POST /api/card-of-the-day/get — получить текущую карту дня пользователя */
+app.post("/api/card-of-the-day/get", async (req, res) => {
+  const userId = getUserIdFromInitData(req.body?.initData, res);
+  if (userId == null) return;
+
+  deleteExpiredCardsOfTheDay();
+  const entry = getCardOfTheDay(userId);
+  if (!entry) {
+    return res.json({ ok: true, card: null });
+  }
+  return res.json({
+    ok: true,
+    card: {
+      text: entry.text,
+      expiresAt: entry.expires_at,
+      dateKey: entry.date_key,
+    },
+  });
 });
 
 export function createApiServer(port = Number(process.env.API_PORT) || 3001, bot = null) {

@@ -187,3 +187,67 @@ export async function getAscendantAndNatalChart(
     natalChart,
   };
 }
+
+const CARD_OF_THE_DAY_SYSTEM = `Ты — мудрый таролог и интуитивный помощник. Твоя задача: дать персональную "карту дня" — один день, одна карта Таро как тема и совет на сегодня.
+
+Правила:
+- Учитывай асцендент и натальную карту человека: они задают фон и сильные архетипы.
+- Если указана "ключевая карта Таро" по натальной карте — свяжи её с темой дня: как энергия этой карты может проявиться сегодня.
+- Обращайся по имени, если оно указано — тёпло и лично.
+- Ответ: 2–4 абзаца сплошным текстом, по-русски. Без списков и буллетов.
+- Тон: поддерживающий, вдохновляющий, без пустых предсказаний. Конкретные подсказки: на что обратить внимание, какую энергию пригласить, что отпустить.
+- Не повторяй дословно натальную карту — используй её как основу для сегодняшнего фокуса.`;
+
+/**
+ * Генерирует текст "карты дня" с учётом асцендента, имени и натальной карты (и опционально ключевой карты Таро).
+ * @param {object} opts - { userName?, ascendant: { sign, description }, natalChart?, tarotCardName? }
+ * @returns {Promise<string>}
+ */
+export async function getCardOfTheDayContent(opts) {
+  const openai = getOpenAI();
+  const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
+  const { userName, ascendant, natalChart, tarotCardName } = opts;
+
+  const parts = [];
+  if (userName && String(userName).trim()) {
+    parts.push(`Имя: ${String(userName).trim()}.`);
+  }
+  if (ascendant?.sign || ascendant?.description) {
+    parts.push(
+      `Асцендент: ${[ascendant.sign, ascendant.description].filter(Boolean).join(" — ")}.`
+    );
+  }
+  if (natalChart && String(natalChart).trim()) {
+    const excerpt =
+      String(natalChart).length > 1200
+        ? String(natalChart).trim().slice(0, 1200) + "..."
+        : String(natalChart).trim();
+    parts.push(`Натальная карта (выдержка): ${excerpt}`);
+  }
+  if (tarotCardName && String(tarotCardName).trim()) {
+    parts.push(
+      `Ключевая карта Таро по натальной карте: ${String(tarotCardName).trim()}. Увяжи её энергию с темой дня.`
+    );
+  }
+  const userContext =
+    parts.length > 0
+      ? parts.join("\n\n")
+      : "Данных нет — дай общую поддерживающую карту дня.";
+
+  const userMessage = `Сегодняшний день. Контекст человека:\n\n${userContext}\n\nДай персональную карту дня: одна карта Таро как тема и совет на сегодня.`;
+
+  const completion = await openai.chat.completions.create({
+    model,
+    messages: [
+      { role: "system", content: CARD_OF_THE_DAY_SYSTEM },
+      { role: "user", content: userMessage },
+    ],
+    max_tokens: 600,
+  });
+
+  const content = extractTextFromChoice(completion.choices[0]);
+  if (!content) {
+    throw new Error("Пустой ответ от нейросети (карта дня)");
+  }
+  return content.trim();
+}

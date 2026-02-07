@@ -10,6 +10,7 @@ import FreeTarot from "../screens/FreeTarot";
 import AllSpreads from "../screens/AllSpreads";
 import Numerology from "../screens/Numerology";
 import Checkout from "../screens/Checkout";
+import CardDayRequest from "../screens/CardDayRequest";
 import Reviews from "../screens/Reviews";
 import Stub from "../screens/Stub";
 import LeaveReview from "../screens/LeaveReview";
@@ -19,6 +20,21 @@ import LeaveReview from "../screens/LeaveReview";
  * @property {React.ComponentType} component
  * @property {function(ScreenRenderer, object?): object} getProps - получает пропсы на основе рендерера и payload
  */
+
+/** Куда перейти после онбординга: экран или checkout с productId */
+function completeOnboarding(goTo, goBack, next) {
+  if (!next) {
+    goBack();
+    return;
+  }
+  if (Object.values(ScreenId).includes(next)) {
+    goTo(next);
+  } else if (next === "card-day") {
+    goTo(ScreenId.CARD_DAY_REQUEST);
+  } else {
+    goTo(ScreenId.CHECKOUT, { productId: next });
+  }
+}
 
 /**
  * @param {object} renderer - { goTo, goBack, stubTitle }
@@ -44,21 +60,7 @@ export function createScreenRegistry(renderer, screenPayload = null) {
       component: Onboarding,
       getProps: () => ({
         onBack: goBack,
-        onComplete: () => {
-          const next = screenPayload?.next;
-          if (!next) {
-            goBack();
-            return;
-          }
-          if (Object.values(ScreenId).includes(next)) {
-            goTo(next);
-          } else if (next === "card-day") {
-            // Карта дня бесплатная — после сбора данных ведём в профиль (без оплаты)
-            goTo(ScreenId.PROFILE);
-          } else {
-            goTo(ScreenId.CHECKOUT, { productId: next });
-          }
-        },
+        onComplete: () => completeOnboarding(goTo, goBack, screenPayload?.next),
       }),
     },
     [ScreenId.FREE_TAROT]: {
@@ -80,6 +82,10 @@ export function createScreenRegistry(renderer, screenPayload = null) {
         productId: screenPayload?.productId ?? null,
       }),
     },
+    [ScreenId.CARD_DAY_REQUEST]: {
+      component: CardDayRequest,
+      getProps: () => ({ onBack: goBack, onNavigate: goTo }),
+    },
     [ScreenId.REVIEWS]: {
       component: Reviews,
       getProps: () => ({ onBack: goBack }),
@@ -88,10 +94,7 @@ export function createScreenRegistry(renderer, screenPayload = null) {
       component: LeaveReview,
       getProps: () => ({
         onBack: goBack,
-        onSubmit: (data) => {
-          // TODO: вызвать API для сохранения отзыва
-          console.log("Review submitted:", data);
-        },
+        onSubmit: () => {}, // TODO: API сохранения отзыва
       }),
     },
     [ScreenId.STUB]: {

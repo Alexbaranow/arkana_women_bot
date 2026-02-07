@@ -111,10 +111,10 @@ export default function AllSpreads({ onBack, onNavigate }) {
     e.stopPropagation();
     const productId = spread.id;
     if (!productId) return;
-    // Карта дня — бесплатно, без оплаты; после онбординга ведём в профиль
+    // Карта дня — бесплатно; экран со спиннером и запросом, затем профиль
     if (productId === "card-day") {
       if (isUserRegistered()) {
-        onNavigate(ScreenId.PROFILE);
+        onNavigate(ScreenId.CARD_DAY_REQUEST);
       } else {
         onNavigate(ScreenId.ONBOARDING, { next: productId });
       }

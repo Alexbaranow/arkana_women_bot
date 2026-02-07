@@ -10,6 +10,7 @@ export const ScreenId = Object.freeze({
   NUMEROLOGY: "numerology",
   ALL_SPREADS: "all-spreads",
   CHECKOUT: "checkout",
+  CARD_DAY_REQUEST: "card-day-request",
   REVIEWS: "reviews",
   LEAVE_REVIEW: "leaveReview",
   STUB: "stub",

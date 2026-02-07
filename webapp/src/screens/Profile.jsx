@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo, useRef } from "react";
 import { useNatalChart } from "../context/NatalChartContext";
 import { getOnboardingUser, saveOnboardingUser } from "./Onboarding";
 import { getInitData } from "../utils/telegram";
+import { getDisplayNatal } from "../utils/natal";
 import { ScreenId } from "../constants/screens";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
@@ -90,58 +91,6 @@ function renderTextWithBold(text) {
   );
 }
 
-/** Парсит ascendant из объекта или JSON-строки */
-function parseAscendant(raw) {
-  if (!raw) return null;
-  if (typeof raw === "object" && raw !== null && !Array.isArray(raw)) {
-    const sign = String(raw.sign ?? "").trim();
-    const description = String(raw.description ?? "").trim();
-    return sign || description ? { sign, description } : null;
-  }
-  if (typeof raw === "string" && raw.trim().startsWith("{")) {
-    try {
-      const parsed = JSON.parse(raw);
-      const asc = parsed?.ascendant ?? parsed;
-      return parseAscendant(asc);
-    } catch {
-      return null;
-    }
-  }
-  return null;
-}
-
-/** Извлекает читаемые данные для отображения: если сохранён сырой JSON — парсим и показываем только нужное */
-function getDisplayNatal(natalResult) {
-  if (!natalResult) return null;
-  const natalChartStr =
-    typeof natalResult.natalChart === "string"
-      ? natalResult.natalChart.trim()
-      : "";
-  let ascendant = parseAscendant(natalResult.ascendant);
-  let chartText =
-    typeof natalResult.natalChart === "string" ? natalResult.natalChart : "";
-
-  if (natalChartStr.startsWith("{")) {
-    try {
-      const parsed = JSON.parse(natalChartStr);
-      const fromChart = parseAscendant(parsed.ascendant);
-      if (fromChart) ascendant = fromChart;
-      chartText =
-        typeof parsed.natalChart === "string" ? parsed.natalChart.trim() : "";
-    } catch {
-      chartText = natalChartStr;
-    }
-  }
-
-  if (ascendant || chartText) {
-    return {
-      ascendant: ascendant || { sign: "", description: "" },
-      natalChart: chartText,
-    };
-  }
-  return null;
-}
-
 export default function Profile({ onBack, onNavigate }) {
   const { natalResult, clearJustCalculated, startCalculation, isCalculating } =
     useNatalChart();
@@ -159,6 +108,8 @@ export default function Profile({ onBack, onNavigate }) {
   const [recalcFieldErrors, setRecalcFieldErrors] = useState({});
   const [orders, setOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
+  const [cardOfTheDay, setCardOfTheDay] = useState(null);
+  const [cardOfTheDayLoading, setCardOfTheDayLoading] = useState(true);
   const recalcDateRef = useRef(null);
   const recalcTimeRef = useRef(null);
   const recalcPlaceRef = useRef(null);
@@ -191,6 +142,25 @@ export default function Profile({ onBack, onNavigate }) {
       .then((data) => (data.ok && data.orders ? setOrders(data.orders) : []))
       .catch(() => setOrders([]))
       .finally(() => setOrdersLoading(false));
+  }, []);
+
+  useEffect(() => {
+    if (!API_URL) {
+      setCardOfTheDayLoading(false);
+      return;
+    }
+    fetch(`${API_URL}/api/card-of-the-day/get`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ initData: getInitData() }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.ok && data.card) setCardOfTheDay(data.card);
+        else setCardOfTheDay(null);
+      })
+      .catch(() => setCardOfTheDay(null))
+      .finally(() => setCardOfTheDayLoading(false));
   }, []);
 
   // После завершения пересчёта снова прячем меню ввода данных (как на экране с кнопкой «Повторный расчёт»)
@@ -278,6 +248,41 @@ export default function Profile({ onBack, onNavigate }) {
               )}
               {user.timeOfBirth && <> · {user.timeOfBirth}</>}
             </p>
+          )}
+        </section>
+
+        <section
+          className="profile-section card profile-card-of-the-day"
+          data-aos="fade-up"
+          data-aos-delay="30"
+        >
+          <h2 className="profile-section-title">Карта дня</h2>
+          {cardOfTheDayLoading ? (
+            <p className="profile-subtext">Загрузка…</p>
+          ) : cardOfTheDay?.text ? (
+            <>
+              <p className="profile-card-of-the-day-expiry">
+                Действует до 24:00 (по Москве)
+              </p>
+              <p className="profile-card-of-the-day-text">
+                {renderTextWithBold(cardOfTheDay.text)}
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="profile-card-of-the-day-empty">
+                Карты дня пока нет. Запроси её в разделе «Все расклады» — карта
+                дня бесплатная и появится здесь.
+              </p>
+              <button
+                type="button"
+                className="btn btn-outline profile-natal-notice-btn"
+                style={{ marginTop: "8px" }}
+                onClick={() => onNavigate(ScreenId.ALL_SPREADS)}
+              >
+                Все расклады → Карта дня
+              </button>
+            </>
           )}
         </section>
 

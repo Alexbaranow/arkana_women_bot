@@ -7,7 +7,67 @@ const users = new Map();
 const reviews = [];
 const orders = [];
 const tarotReadings = [];
+const cardOfTheDayStore = [];
 let orderId = 1;
+
+/** Текущая дата по Москве (YYYY-MM-DD) для карты дня */
+function getMoscowDateKey() {
+  const now = new Date();
+  const moscow = new Date(now.toLocaleString("en-US", { timeZone: "Europe/Moscow" }));
+  return moscow.toISOString().slice(0, 10);
+}
+
+/** Конец текущего дня по Москве (ISO) — после этого карта дня считается истёкшей */
+function getMoscowEndOfToday() {
+  const key = getMoscowDateKey();
+  return `${key}T23:59:59.999+03:00`;
+}
+
+// === Карта дня (бесплатная, до 24:00 по Москве) ===
+
+export function saveCardOfTheDay(userId, text) {
+  const dateKey = getMoscowDateKey();
+  const expiresAt = getMoscowEndOfToday();
+  const existing = cardOfTheDayStore.find(
+    (c) => c.user_id === userId && c.date_key === dateKey
+  );
+  if (existing) {
+    existing.text = text;
+    existing.expires_at = expiresAt;
+    return existing;
+  }
+  const entry = {
+    user_id: userId,
+    date_key: dateKey,
+    text,
+    expires_at: expiresAt,
+    created_at: new Date().toISOString(),
+  };
+  cardOfTheDayStore.push(entry);
+  return entry;
+}
+
+export function getCardOfTheDay(userId) {
+  const dateKey = getMoscowDateKey();
+  const now = new Date();
+  const entry = cardOfTheDayStore.find(
+    (c) => c.user_id === userId && c.date_key === dateKey
+  );
+  if (!entry) return null;
+  const expiresAt = new Date(entry.expires_at);
+  if (now > expiresAt) return null;
+  return entry;
+}
+
+/** Удалить истёкшие карты дня (можно вызывать периодически) */
+export function deleteExpiredCardsOfTheDay() {
+  const now = new Date();
+  for (let i = cardOfTheDayStore.length - 1; i >= 0; i--) {
+    if (new Date(cardOfTheDayStore[i].expires_at) <= now) {
+      cardOfTheDayStore.splice(i, 1);
+    }
+  }
+}
 
 // === Пользователи ===
 
