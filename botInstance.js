@@ -1,5 +1,5 @@
 /**
- * Общий экземпляр бота для dev (bot.js) и prod (server-webapp.js).
+ * Общий экземпляр бота для dev (arkana_women_bot.js) и prod (server-webapp.js).
  * Экспортирует настроенного бота и setupCommands.
  */
 import { fileURLToPath } from "url";

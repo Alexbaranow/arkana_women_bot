@@ -2,11 +2,11 @@
   "name": "arkana-women-bot",
   "version": "1.0.0",
   "description": "Telegram бот с картами таро, предсказаниями, услугами и нейросетью",
-  "main": "bot.js",
+  "main": "arkana_women_bot.js",
   "type": "module",
   "scripts": {
-    "start": "node bot.js",
-    "dev": "node --watch bot.js",
+    "start": "node arkana_women_bot.js",
+    "dev": "node --watch arkana_women_bot.js",
     "webapp": "cd webapp && npm run dev",
     "serve:webapp": "node server-webapp.js",
     "lint": "eslint ."
