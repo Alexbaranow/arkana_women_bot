@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { getProduct, rubToStars } from "../constants/products";
 import { getInitData } from "../utils/telegram";
-
-const API_URL = import.meta.env.VITE_API_URL || "";
+import { getApiUrl } from "../config/api";
 /** Юзернейм бота без @ (для перехода в чат после отправки счёта Stars) */
 const BOT_USERNAME = import.meta.env.VITE_BOT_USERNAME || "";
 
@@ -21,7 +20,7 @@ export default function Checkout({ onBack, productId }) {
     setMessage(null);
     setLoading("stars");
     try {
-      const base = API_URL || "";
+      const base = getApiUrl() || "";
       const res = await fetch(`${base}/api/request-stars-invoice`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -37,14 +36,24 @@ export default function Checkout({ onBack, productId }) {
       }
       setMessage("Счёт отправлен. Открываю чат с ботом…");
       // Перекидываем в чат с ботом — пользователь сразу видит инвойс и может нажать «Оплатить»
-      if (BOT_USERNAME && typeof window !== "undefined" && window.Telegram?.WebApp?.openTelegramLink) {
+      if (
+        BOT_USERNAME &&
+        typeof window !== "undefined" &&
+        window.Telegram?.WebApp?.openTelegramLink
+      ) {
         try {
-          window.Telegram.WebApp.openTelegramLink(`https://t.me/${BOT_USERNAME}`);
+          window.Telegram.WebApp.openTelegramLink(
+            `https://t.me/${BOT_USERNAME}`
+          );
         } catch (_) {
-          setMessage("Счёт в чате с ботом. Перейди в диалог с ботом и нажми «Оплатить».");
+          setMessage(
+            "Счёт в чате с ботом. Перейди в диалог с ботом и нажми «Оплатить»."
+          );
         }
       } else {
-        setMessage("Счёт в чате с ботом. Перейди в диалог с ботом и нажми «Оплатить».");
+        setMessage(
+          "Счёт в чате с ботом. Перейди в диалог с ботом и нажми «Оплатить»."
+        );
       }
     } catch (err) {
       setError("Ошибка сети. Попробуй ещё раз.");
@@ -60,7 +69,7 @@ export default function Checkout({ onBack, productId }) {
     setTransferDetails(null);
     setLoading("card");
     try {
-      const base = API_URL || "";
+      const base = getApiUrl() || "";
       const res = await fetch(`${base}/api/create-external-order`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -84,9 +93,14 @@ export default function Checkout({ onBack, productId }) {
         });
       } else if (data.paymentUrl) {
         window.open(data.paymentUrl, "_blank", "noopener");
-        setMessage(data.message || "После оплаты по ссылке результат придёт в этот чат.");
+        setMessage(
+          data.message || "После оплаты по ссылке результат придёт в этот чат."
+        );
       } else {
-        setMessage(data.message || "Заказ создан. Сохрани номер заказа и напиши в чат боту после оплаты.");
+        setMessage(
+          data.message ||
+            "Заказ создан. Сохрани номер заказа и напиши в чат боту после оплаты."
+        );
       }
     } catch (err) {
       setError("Ошибка сети. Попробуй ещё раз.");
@@ -99,7 +113,11 @@ export default function Checkout({ onBack, productId }) {
     return (
       <div className="screen">
         <header className="header header-compact">
-          <button type="button" className="btn-back" onClick={onBack}>
+          <button
+            type="button"
+            className="btn-back"
+            onClick={onBack}
+          >
             ←
           </button>
           <h1>Оплата</h1>
@@ -107,7 +125,11 @@ export default function Checkout({ onBack, productId }) {
         <main>
           <div className="card">
             <p className="subtitle">Продукт не выбран.</p>
-            <button type="button" className="btn btn-primary" onClick={onBack}>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={onBack}
+            >
               Вернуться
             </button>
           </div>
@@ -119,13 +141,20 @@ export default function Checkout({ onBack, productId }) {
   return (
     <div className="screen">
       <header className="header header-compact">
-        <button type="button" className="btn-back" onClick={onBack}>
+        <button
+          type="button"
+          className="btn-back"
+          onClick={onBack}
+        >
           ←
         </button>
         <h1>Оплата</h1>
       </header>
       <main>
-        <div className="card checkout-card" data-aos="fade-up">
+        <div
+          className="card checkout-card"
+          data-aos="fade-up"
+        >
           <h2 className="checkout-product-title">{product.title}</h2>
           {product.description && (
             <p className="checkout-description">{product.description}</p>
@@ -137,12 +166,18 @@ export default function Checkout({ onBack, productId }) {
           </p>
 
           {error && (
-            <p className="checkout-error" role="alert">
+            <p
+              className="checkout-error"
+              role="alert"
+            >
               {error}
             </p>
           )}
           {message && !transferDetails && (
-            <p className="checkout-message" role="status">
+            <p
+              className="checkout-message"
+              role="status"
+            >
               {message}
             </p>
           )}
@@ -152,7 +187,9 @@ export default function Checkout({ onBack, productId }) {
               <p className="checkout-transfer-title">
                 Заказ №{transferDetails.orderId} · {transferDetails.amount} ₽
               </p>
-              <p className="checkout-transfer-product">{transferDetails.productTitle}</p>
+              <p className="checkout-transfer-product">
+                {transferDetails.productTitle}
+              </p>
               {transferDetails.card && (
                 <p className="checkout-transfer-detail">
                   <strong>Карта:</strong> {transferDetails.card}
@@ -164,7 +201,9 @@ export default function Checkout({ onBack, productId }) {
                 </p>
               )}
               <p className="checkout-transfer-hint">
-                В комментарии к переводу укажи <strong>№{transferDetails.orderId}</strong>. После оплаты напиши в чат боту — пришлём результат.
+                В комментарии к переводу укажи{" "}
+                <strong>№{transferDetails.orderId}</strong>. После оплаты напиши
+                в чат боту — пришлём результат.
               </p>
             </div>
           )}
@@ -176,7 +215,9 @@ export default function Checkout({ onBack, productId }) {
               onClick={payWithStars}
               disabled={loading !== null}
             >
-              {loading === "stars" ? "Отправляем счёт…" : "Оплатить Stars (в чате)"}
+              {loading === "stars"
+                ? "Отправляем счёт…"
+                : "Оплатить Stars (в чате)"}
             </button>
             <button
               type="button"
@@ -189,7 +230,8 @@ export default function Checkout({ onBack, productId }) {
           </div>
 
           <p className="checkout-hint">
-            Stars — оплата в чате с ботом. Карта / СБП — перевод по реквизитам; после оплаты напиши в чат боту.
+            Stars — оплата в чате с ботом. Карта / СБП — перевод по реквизитам;
+            после оплаты напиши в чат боту.
           </p>
         </div>
       </main>

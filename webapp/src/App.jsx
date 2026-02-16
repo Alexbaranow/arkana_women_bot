@@ -1,14 +1,13 @@
 import { useEffect } from "react";
 import AOS from "aos";
-import CardShuffleLoader from "./components/CardShuffleLoader";
+import TarotShuffleLoader from "./components/TarotShuffleLoader";
 import { useNavigation } from "./hooks/useNavigation";
 import { useNatalChart } from "./context/NatalChartContext";
 import { useCardDayRequest } from "./context/CardDayRequestContext";
 import ScreenRouter from "./components/ScreenRouter";
 import { ScreenId } from "./constants/screens";
 import { getInitData } from "./utils/telegram";
-
-const API_URL = import.meta.env.VITE_API_URL || "";
+import { getApiUrl } from "./config/api";
 
 export default function App() {
   const { currentScreen, goTo, goBack, stubTitle, screenPayload } =
@@ -51,7 +50,7 @@ export default function App() {
 
   const resetStorage = async () => {
     try {
-      const base = API_URL || "";
+      const base = getApiUrl() || "";
       await fetch(`${base}/api/card-of-the-day/clear`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -80,7 +79,10 @@ export default function App() {
           <div className="app-topbar-right">
             {isCalculating && (
               <div className="app-topbar-spinner">
-                <CardShuffleLoader size={28} aria-label="Рассчитываем асцендент и натальную карту" />
+                <TarotShuffleLoader
+                  size={28}
+                  aria-label="Рассчитываем асцендент и натальную карту"
+                />
               </div>
             )}
             <button

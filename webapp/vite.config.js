@@ -5,6 +5,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 3000,
+    // Режим разработки: запросы с /api уходят на локальный API (см. docs/DEV.md, dev-api.js)
     proxy: {
       "/api": {
         target: "http://localhost:3001",

@@ -1,6 +1,11 @@
 import express from "express";
 import { validate, parse } from "@tma.js/init-data-node";
-import { getAnswer, fetchAscendant, fetchNatalChart, getCardOfTheDayContent } from "./services/ai.js";
+import {
+  getAnswer,
+  fetchAscendant,
+  fetchNatalChart,
+  getCardOfTheDayContent,
+} from "./services/ai.js";
 import {
   hasFreeQuestion,
   useFreeQuestion,
@@ -26,6 +31,12 @@ app.use((req, res, next) => {
   next();
 });
 
+// ========== РЕЖИМ РАЗРАБОТКИ (DEV) ==========
+// Подробно: docs/DEV.md
+// В dev (NODE_ENV !== "production") можно вызывать API из браузера без Telegram:
+// - getUserIdFromInitData возвращает DEV_USER_ID || 1 при отсутствии initData/BOT_TOKEN
+// - validateNatalRequest не требует initData для расчёта асцендента/натальной карты
+// - в ответах 500 добавляется serverError для отладки
 const isDev = process.env.NODE_ENV !== "production";
 const DEV_USER_ID =
   Number(process.env.DEV_USER_ID) || Number(process.env.ADMIN_ID) || 0;
@@ -45,18 +56,22 @@ function sendAIError(res, err, defaultMessage) {
   return res.status(500).json({ error: err?.message || defaultMessage });
 }
 
-/** Извлечь Telegram user id из initData (для оплаты и заказов) */
+/** Извлечь Telegram user id из initData (для оплаты и заказов).
+ *  DEV: при isDev и отсутствии initData или BOT_TOKEN возвращает DEV_USER_ID || 1 (см. docs/DEV.md). */
 function getUserIdFromInitData(initData, res) {
   const token = process.env.BOT_TOKEN;
+  if (isDev) {
+    if (!initData?.trim() || !token) {
+      const devId = DEV_USER_ID || 1;
+      return devId;
+    }
+  }
   if (!token) {
+    console.error("[API] 500: BOT_TOKEN не задан в .env");
     res.status(500).json({ error: "Сервер не настроен" });
     return null;
   }
-  // Режим разработки: без initData (браузер) — используем DEV_USER_ID
   if (!initData?.trim()) {
-    if (isDev && DEV_USER_ID) {
-      return DEV_USER_ID;
-    }
     res.status(400).json({ error: "Нужны initData" });
     return null;
   }
@@ -78,35 +93,14 @@ function getUserIdFromInitData(initData, res) {
 
 /** POST /api/free-question — бесплатный вопрос из мини-приложения */
 app.post("/api/free-question", async (req, res) => {
-  const { initData, question } = req.body || {};
-  const token = process.env.BOT_TOKEN;
+  const { question } = req.body || {};
 
   if (typeof question !== "string") {
     return res.status(400).json({ error: "Нужны initData и question" });
   }
 
-  if (!token) {
-    return res.status(500).json({ error: "Сервер не настроен" });
-  }
-
-  let userId;
-  if (!initData?.trim() && isDev && DEV_USER_ID) {
-    userId = DEV_USER_ID;
-  } else if (!initData) {
-    return res.status(400).json({ error: "Нужны initData и question" });
-  } else {
-    try {
-      validate(initData, token);
-      const parsed = parse(initData);
-      userId = parsed?.user?.id;
-    } catch (err) {
-      console.error("InitData validation failed:", err?.message);
-      return res.status(401).json({ error: "Неверные данные приложения" });
-    }
-    if (!userId) {
-      return res.status(401).json({ error: "Пользователь не найден в initData" });
-    }
-  }
+  const userId = getUserIdFromInitData(req.body?.initData, res);
+  if (userId == null) return;
 
   const text = question.trim();
   if (text.length < 5) {
@@ -139,6 +133,7 @@ function validateNatalRequest(req, res) {
     res.status(400).json({ error: "Нужны dateOfBirth и placeOfBirth" });
     return null;
   }
+  // DEV: в режиме разработки не проверяем initData — можно вызывать из браузера (docs/DEV.md)
   if (!isDev) {
     const token = process.env.BOT_TOKEN;
     if (!initData || !token) {
@@ -225,7 +220,7 @@ app.post("/api/request-stars-invoice", async (req, res) => {
   if (!bot) {
     return res.status(503).json({
       error:
-        "Оплата Stars недоступна: API запущен без бота. В Docker используйте CMD [\"node\", \"server-webapp.js\"]. Локально — node arkana_women_bot.js или node server-webapp.js.",
+        'Оплата Stars недоступна: API запущен без бота. В Docker используйте CMD ["node", "server-webapp.js"]. Локально — node arkana_women_bot.js или node server-webapp.js.',
     });
   }
 
@@ -248,7 +243,14 @@ app.post("/api/request-stars-invoice", async (req, res) => {
   } catch (err) {
     const code = err?.error_code ?? err?.error?.error_code;
     const desc = err?.description ?? err?.error?.description ?? err?.message;
-    console.error("sendInvoice error:", desc, "code:", code, "full:", err?.response?.body ?? err?.payload ?? "");
+    console.error(
+      "sendInvoice error:",
+      desc,
+      "code:",
+      code,
+      "full:",
+      err?.response?.body ?? err?.payload ?? ""
+    );
     return res.status(500).json({
       error: "Не удалось отправить счёт. Попробуй позже или оплати картой.",
     });
@@ -296,7 +298,9 @@ app.post("/api/create-external-order", async (req, res) => {
   }
 
   // Иначе — ссылка на внешнюю страницу оплаты (если настроена)
-  const paymentUrl = externalUrl.trim() ? `${externalUrl.trim()}?order_id=${orderId}` : null;
+  const paymentUrl = externalUrl.trim()
+    ? `${externalUrl.trim()}?order_id=${orderId}`
+    : null;
   if (paymentUrl) {
     return res.json({
       ok: true,
@@ -380,7 +384,10 @@ app.post("/api/card-of-the-day", async (req, res) => {
       userName: req.body?.userName?.trim() || null,
       ascendant:
         ascendant && (ascendant.sign || ascendant.description)
-          ? { sign: ascendant.sign || "", description: ascendant.description || "" }
+          ? {
+              sign: ascendant.sign || "",
+              description: ascendant.description || "",
+            }
           : null,
       natalChart: natalChart && String(natalChart).trim() ? natalChart : null,
       tarotCardName: req.body?.tarotCardName?.trim() || null,
@@ -397,11 +404,12 @@ app.post("/api/card-of-the-day", async (req, res) => {
     if (isRateLimitError(err)) {
       return res.status(429).json({ error: RATE_LIMIT_MESSAGE });
     }
-    console.error("card-of-the-day error:", err?.message);
+    console.error("[API] card-of-the-day error:", err?.message, err?.stack);
     const payload = {
-      error: err?.message || "Не удалось сгенерировать карту дня. Попробуй позже.",
+      error:
+        err?.message || "Не удалось сгенерировать карту дня. Попробуй позже.",
     };
-    if (isDev) payload.serverError = err?.message || String(err);
+    if (isDev) payload.serverError = err?.message || String(err); // DEV: отладка (docs/DEV.md)
     return res.status(500).json(payload);
   }
 });
@@ -415,27 +423,66 @@ app.post("/api/card-of-the-day/clear", async (req, res) => {
 });
 
 /** POST /api/card-of-the-day/get — получить текущую карту дня пользователя */
-app.post("/api/card-of-the-day/get", async (req, res) => {
-  const userId = getUserIdFromInitData(req.body?.initData, res);
-  if (userId == null) return;
+app.post("/api/card-of-the-day/get", async (req, res, next) => {
+  if (isDev)
+    console.log(
+      "[API] card-of-the-day/get запрос, initData есть:",
+      !!req.body?.initData?.trim()
+    ); // DEV: отладка (docs/DEV.md)
+  try {
+    const userId = getUserIdFromInitData(req.body?.initData, res);
+    if (userId == null) return;
 
-  deleteExpiredCardsOfTheDay();
-  const entry = getCardOfTheDay(userId);
-  if (!entry) {
-    return res.json({ ok: true, card: null });
+    deleteExpiredCardsOfTheDay();
+    const entry = getCardOfTheDay(userId);
+    if (!entry) {
+      return res.json({ ok: true, card: null });
+    }
+    return res.json({
+      ok: true,
+      card: {
+        text: entry.text,
+        expiresAt: entry.expires_at,
+        dateKey: entry.date_key,
+      },
+    });
+  } catch (err) {
+    console.error("[API] card-of-the-day/get error:", err?.message, err?.stack);
+    if (!res.headersSent) {
+      return res.status(500).json({
+        error: "Не удалось загрузить карту дня. Попробуй позже.",
+        ...(isDev && { serverError: err?.message }), // DEV: отладка (docs/DEV.md)
+      });
+    }
+    next(err);
   }
-  return res.json({
-    ok: true,
-    card: {
-      text: entry.text,
-      expiresAt: entry.expires_at,
-      dateKey: entry.date_key,
-    },
+});
+
+// Всегда отдаём JSON при любой необработанной ошибке
+app.use((err, req, res, next) => {
+  if (res.headersSent) return next(err);
+  console.error("[API] Необработанная ошибка:", err?.message, err?.stack);
+  res.status(500).json({
+    error: err?.message || "Внутренняя ошибка сервера",
+    ...(isDev && { serverError: String(err) }), // DEV: отладка (docs/DEV.md)
   });
 });
 
-export function createApiServer(port = Number(process.env.API_PORT) || 3001, bot = null) {
+export function createApiServer(
+  port = Number(process.env.API_PORT) || 3001,
+  bot = null
+) {
   if (bot) app.set("bot", bot);
+  if (!process.env.BOT_TOKEN) {
+    console.warn(
+      "⚠️ BOT_TOKEN не задан — запросы карты дня, оплаты и заказов будут возвращать 500."
+    );
+  }
+  if (!process.env.OPENAI_API_KEY) {
+    console.warn(
+      "⚠️ OPENAI_API_KEY не задан — карта дня, асцендент и натальная карта будут возвращать 500."
+    );
+  }
   return app.listen(port, () => {
     console.log(`📡 API слушает порт ${port}`);
   });

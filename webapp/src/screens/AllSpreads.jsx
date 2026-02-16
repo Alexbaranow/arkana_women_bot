@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
-import CardShuffleLoader from "../components/CardShuffleLoader";
+import TarotShuffleLoader from "../components/TarotShuffleLoader";
 import { useCardDayRequest } from "../context/CardDayRequestContext";
 import { ScreenId } from "../constants/screens";
 import { isUserRegistered } from "./Onboarding";
 import { getInitData } from "../utils/telegram";
-
-const API_URL = import.meta.env.VITE_API_URL || "";
+import { getApiUrl } from "../config/api";
 
 const SPREADS = [
   {
@@ -114,7 +113,7 @@ export default function AllSpreads({ onBack, onNavigate }) {
   const [expandedId, setExpandedId] = useState(null);
 
   useEffect(() => {
-    const base = API_URL || "";
+    const base = getApiUrl() || "";
     fetch(`${base}/api/card-of-the-day/get`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -213,7 +212,10 @@ export default function AllSpreads({ onBack, onNavigate }) {
                       {s.price} ₽
                     </span>
                   ) : (
-                    <span className="menu-price spread-card-price" style={{ color: "var(--color-primary)" }}>
+                    <span
+                      className="menu-price spread-card-price"
+                      style={{ color: "var(--color-primary)" }}
+                    >
                       Бесплатно
                     </span>
                   )}
@@ -251,7 +253,7 @@ export default function AllSpreads({ onBack, onNavigate }) {
                         aria-busy="true"
                       >
                         <span>Идёт расчёт</span>
-                        <CardShuffleLoader size={24} />
+                        <TarotShuffleLoader size={24} />
                       </div>
                     ) : (
                       <button
@@ -259,7 +261,11 @@ export default function AllSpreads({ onBack, onNavigate }) {
                         className="btn btn-primary spread-card-btn"
                         onClick={(e) => handleOrder(e, s)}
                       >
-                        {s.id === "card-day" ? (hasCardOfTheDay ? "Посмотреть карту" : "Получить карту дня") : "Заказать расклад"}
+                        {s.id === "card-day"
+                          ? hasCardOfTheDay
+                            ? "Посмотреть карту"
+                            : "Получить карту дня"
+                          : "Заказать расклад"}
                       </button>
                     )}
                   </div>

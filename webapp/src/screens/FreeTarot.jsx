@@ -1,12 +1,7 @@
 import { useState, useEffect } from "react";
 import { getOnboardingUser } from "./Onboarding";
-
-const API_URL = import.meta.env.VITE_API_URL || "";
-
-function getInitData() {
-  if (typeof window === "undefined") return "";
-  return window.Telegram?.WebApp?.initData ?? "";
-}
+import { getInitData } from "../utils/telegram";
+import { getApiUrl } from "../config/api";
 
 export default function FreeTarot({ onBack }) {
   const user = getOnboardingUser();
@@ -45,13 +40,29 @@ export default function FreeTarot({ onBack }) {
       setError("Опиши вопрос чуть подробнее, хотя бы в несколько слов");
       return;
     }
-    // Читаем initData в момент нажатия — к этому времени Telegram мог уже подставить данные
-    const currentInitData = getInitData();
-    if (!currentInitData) {
+
+    const inTelegram = typeof window !== "undefined" && window.Telegram?.WebApp;
+    let currentInitData = getInitData();
+
+    // Только внутри Telegram требуем initData (он может подставиться с задержкой — даём пару попыток)
+    if (inTelegram && !currentInitData) {
+      await new Promise((r) => setTimeout(r, 800));
+      currentInitData = getInitData();
+    }
+    if (inTelegram && !currentInitData) {
+      await new Promise((r) => setTimeout(r, 800));
+      currentInitData = getInitData();
+    }
+    if (inTelegram && !currentInitData) {
       setError(
-        "Открой приложение из Telegram (кнопка «🔮 Открыть приложение» в боте). Если уже открыл из Telegram — подожди 2–3 секунды и нажми «Отправить» снова."
+        "Данные от Telegram ещё не подгрузились. Подожди 2–3 секунды и нажми «Отправить» снова."
       );
       return;
+    }
+
+    // Локально в браузере (не Telegram) initData пустой — бэкенд в dev (npm run dev:api) примет запрос по DEV_USER_ID
+    if (!inTelegram && !currentInitData) {
+      currentInitData = "";
     }
 
     setError(null);
@@ -59,15 +70,24 @@ export default function FreeTarot({ onBack }) {
     setAnswer(null);
 
     try {
-      const res = await fetch(`${API_URL}/api/free-question`, {
+      const res = await fetch(`${getApiUrl()}/api/free-question`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ initData: currentInitData, question: text }),
+        body: JSON.stringify({
+          initData: currentInitData || "",
+          question: text,
+        }),
       });
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        setError(data.error || "Что-то пошло не так");
+        if (res.status === 401) {
+          setError(
+            "Сессия не распознана. Закрой и снова открой приложение из бота (🔮 Открыть приложение), затем отправь вопрос."
+          );
+        } else {
+          setError(data.error || "Что-то пошло не так");
+        }
         return;
       }
       setAnswer(data.answer);

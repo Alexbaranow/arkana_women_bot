@@ -1,19 +1,6 @@
 import { createContext, useContext, useState, useCallback } from "react";
-
-const API_URL = import.meta.env.VITE_API_URL || "";
-const STORAGE_NATAL_KEY = "arkana_natal_result";
-
-function getNatalResultFromStorage() {
-  try {
-    const raw = localStorage.getItem(STORAGE_NATAL_KEY);
-    if (!raw) return null;
-    const data = JSON.parse(raw);
-    const hasData = data?.ascendant != null || (data?.natalChart ?? "").trim();
-    return hasData ? data : null;
-  } catch {
-    return null;
-  }
-}
+import { getNatalResultFromStorage } from "../utils/natal";
+import { getApiUrl } from "../config/api";
 
 const NatalChartContext = createContext(null);
 
@@ -40,8 +27,8 @@ export function NatalChartProvider({ children }) {
       };
       try {
         const [ascRes, chartRes] = await Promise.all([
-          fetch(`${API_URL}/api/calculate-ascendant`, opts),
-          fetch(`${API_URL}/api/calculate-natal-chart`, opts),
+          fetch(`${getApiUrl()}/api/calculate-ascendant`, opts),
+          fetch(`${getApiUrl()}/api/calculate-natal-chart`, opts),
         ]);
         const ascData = await ascRes.json().catch(() => ({}));
         const chartData = await chartRes.json().catch(() => ({}));

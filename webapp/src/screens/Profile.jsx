@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
-import CardShuffleLoader from "../components/CardShuffleLoader";
+import TarotShuffleLoader from "../components/TarotShuffleLoader";
 import { useNatalChart } from "../context/NatalChartContext";
 import { useCardDayRequest } from "../context/CardDayRequestContext";
 import { getOnboardingUser, saveOnboardingUser } from "./Onboarding";
@@ -9,9 +9,11 @@ import { renderTextWithBold, formatOrderDate } from "../utils/format";
 import { ScreenId } from "../constants/screens";
 import { getOrderStatusLabel } from "../constants/orders";
 import { useMyOrders } from "../hooks/useMyOrders";
-import { getTarotCardImageForNatal, getCardImageForCardDay } from "../constants/tarotCards";
-
-const API_URL = import.meta.env.VITE_API_URL || "";
+import {
+  getTarotCardImageForNatal,
+  getCardImageForCardDay,
+} from "../constants/tarotCards";
+import { getApiUrl } from "../config/api";
 
 /** В поле даты — только цифры, точки подставляются автоматически (ДД.ММ.ГГГГ) */
 function formatDateInput(value) {
@@ -42,14 +44,21 @@ function parseUserDateInput(str) {
     const d = new Date(s);
     if (!Number.isNaN(d.getTime())) return d.toISOString().slice(0, 10);
   }
-  const parts = s.split(/[.\-/]/).map((p) => p.trim()).filter(Boolean);
+  const parts = s
+    .split(/[.\-/]/)
+    .map((p) => p.trim())
+    .filter(Boolean);
   if (parts.length !== 3) return "";
   let day, month, year;
   if (parts[0].length === 4 && parts[1].length <= 2 && parts[2].length <= 2) {
     year = parseInt(parts[0], 10);
     month = parseInt(parts[1], 10);
     day = parseInt(parts[2], 10);
-  } else if (parts[2].length === 4 && parts[0].length <= 2 && parts[1].length <= 2) {
+  } else if (
+    parts[2].length === 4 &&
+    parts[0].length <= 2 &&
+    parts[1].length <= 2
+  ) {
     day = parseInt(parts[0], 10);
     month = parseInt(parts[1], 10);
     year = parseInt(parts[2], 10);
@@ -118,7 +127,11 @@ export default function Profile({ onBack, onNavigate }) {
     const order = ["dateOfBirth", "timeOfBirth", "placeOfBirth"];
     const firstKey = order.find((k) => recalcFieldErrors[k]);
     if (!firstKey) return;
-    const refMap = { dateOfBirth: recalcDateRef, timeOfBirth: recalcTimeRef, placeOfBirth: recalcPlaceRef };
+    const refMap = {
+      dateOfBirth: recalcDateRef,
+      timeOfBirth: recalcTimeRef,
+      placeOfBirth: recalcPlaceRef,
+    };
     const ref = refMap[firstKey];
     ref?.current?.scrollIntoView({ behavior: "smooth", block: "center" });
     setTimeout(() => ref?.current?.focus(), 300);
@@ -128,32 +141,29 @@ export default function Profile({ onBack, onNavigate }) {
     clearJustCalculated();
   }, [clearJustCalculated]);
 
-  const handleOrderDelete = useCallback(
-    async (orderId) => {
-      setOrderDeleteId(orderId);
-      try {
-        const res = await fetch(`${API_URL}/api/delete-order`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ initData: getInitData(), orderId }),
-        });
-        const data = await res.json();
-        if (data.ok) {
-          setOrders((prev) => prev.filter((o) => o.id !== orderId));
-          setOrderSwipeOpenId(null);
-        }
-      } catch {
-        // ignore
-      } finally {
-        setOrderDeleteId(null);
+  const handleOrderDelete = useCallback(async (orderId) => {
+    setOrderDeleteId(orderId);
+    try {
+      const res = await fetch(`${getApiUrl()}/api/delete-order`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ initData: getInitData(), orderId }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setOrders((prev) => prev.filter((o) => o.id !== orderId));
+        setOrderSwipeOpenId(null);
       }
-    },
-    []
-  );
+    } catch {
+      // ignore
+    } finally {
+      setOrderDeleteId(null);
+    }
+  }, []);
 
   const fetchCardOfTheDay = useCallback(() => {
     setCardOfTheDayLoading(true);
-    fetch(`${API_URL}/api/card-of-the-day/get`, {
+    fetch(`${getApiUrl()}/api/card-of-the-day/get`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ initData: getInitData() }),
@@ -193,31 +203,56 @@ export default function Profile({ onBack, onNavigate }) {
     const placeOfBirth = (recalcPlace || user?.placeOfBirth || "").trim();
     const date = savedDate ? new Date(savedDate) : null;
     const errors = {};
-    if (!savedDate || !date || Number.isNaN(date.getTime()) || date > new Date()) {
+    if (
+      !savedDate ||
+      !date ||
+      Number.isNaN(date.getTime()) ||
+      date > new Date()
+    ) {
       errors.dateOfBirth = true;
     }
-    if (!recalcTimeUnknown && recalcTime.trim() && !parseUserTimeInput(recalcTime)) {
+    if (
+      !recalcTimeUnknown &&
+      recalcTime.trim() &&
+      !parseUserTimeInput(recalcTime)
+    ) {
       errors.timeOfBirth = true;
     }
     if (!placeOfBirth) errors.placeOfBirth = true;
     if (Object.keys(errors).length > 0) {
       setRecalcFieldErrors(errors);
-      if (errors.dateOfBirth) setRecalcError("Укажи дату рождения (например 16.02.1992)");
-      else if (errors.timeOfBirth) setRecalcError("Время укажи в формате ЧЧ:ММ (например 16:30)");
+      if (errors.dateOfBirth)
+        setRecalcError("Укажи дату рождения (например 16.02.1992)");
+      else if (errors.timeOfBirth)
+        setRecalcError("Время укажи в формате ЧЧ:ММ (например 16:30)");
       else setRecalcError("Укажи место рождения (город или страна)");
       return;
     }
     setRecalcFieldErrors({});
-    const timeOfBirth = recalcTimeUnknown ? "" : (parseUserTimeInput(recalcTime) || (user?.timeOfBirth || "").trim() || undefined);
-    if (hasUser && (recalcDate || recalcPlace || recalcTime !== undefined || recalcTimeUnknown)) {
+    const timeOfBirth = recalcTimeUnknown
+      ? ""
+      : parseUserTimeInput(recalcTime) ||
+        (user?.timeOfBirth || "").trim() ||
+        undefined;
+    if (
+      hasUser &&
+      (recalcDate ||
+        recalcPlace ||
+        recalcTime !== undefined ||
+        recalcTimeUnknown)
+    ) {
       saveOnboardingUser(
         user.name,
         savedDate,
         placeOfBirth,
-        recalcTimeUnknown ? "" : (recalcTime || (user?.timeOfBirth ?? ""))
+        recalcTimeUnknown ? "" : recalcTime || (user?.timeOfBirth ?? "")
       );
     }
-    startCalculation(getInitData(), { dateOfBirth: savedDate, placeOfBirth, timeOfBirth });
+    startCalculation(getInitData(), {
+      dateOfBirth: savedDate,
+      placeOfBirth,
+      timeOfBirth,
+    });
   };
 
   return (
@@ -284,9 +319,15 @@ export default function Profile({ onBack, onNavigate }) {
               </p>
             </>
           ) : isCardDayRequesting ? (
-            <div className="profile-card-of-the-day-requesting" role="status">
+            <div
+              className="profile-card-of-the-day-requesting"
+              role="status"
+            >
               <span className="profile-card-of-the-day-empty">Идёт расчёт</span>
-              <CardShuffleLoader size={28} aria-label="Идёт расчёт" />
+              <TarotShuffleLoader
+                size={28}
+                aria-label="Идёт расчёт"
+              />
             </div>
           ) : (
             <>
@@ -367,27 +408,27 @@ export default function Profile({ onBack, onNavigate }) {
               data-aos-delay="150"
             >
               <p className="profile-natal-notice-text">
-{user?.name ? (
-              <>
-                {user.name}, это базовый расчёт по дате и месту. Полный
-                разбор с тарологом — в разделе «Все расклады».
-              </>
-            ) : (
-              <>
-                Это базовый расчёт по дате и месту. Полный разбор с
-                тарологом — в разделе «Все расклады».
-              </>
-            )}
-          </p>
-          <button
-            type="button"
-            className="btn btn-outline profile-natal-notice-btn"
-            onClick={() => onNavigate(ScreenId.ALL_SPREADS)}
-          >
-            Все расклады → Натальная карта
-          </button>
-        </div>
-      </>
+                {user?.name ? (
+                  <>
+                    {user.name}, это базовый расчёт по дате и месту. Полный
+                    разбор с тарологом — в разделе «Все расклады».
+                  </>
+                ) : (
+                  <>
+                    Это базовый расчёт по дате и месту. Полный разбор с
+                    тарологом — в разделе «Все расклады».
+                  </>
+                )}
+              </p>
+              <button
+                type="button"
+                className="btn btn-outline profile-natal-notice-btn"
+                onClick={() => onNavigate(ScreenId.ALL_SPREADS)}
+              >
+                Все расклады → Натальная карта
+              </button>
+            </div>
+          </>
         )}
 
         <section
@@ -426,10 +467,16 @@ export default function Profile({ onBack, onNavigate }) {
                   }}
                 >
                   <div
-                    className={`profile-order-swipe-inner ${orderSwipeOpenId === o.id ? "profile-order-swipe-open" : ""}`}
+                    className={`profile-order-swipe-inner ${
+                      orderSwipeOpenId === o.id
+                        ? "profile-order-swipe-open"
+                        : ""
+                    }`}
                   >
                     <div className="profile-order-item">
-                      <span className="profile-order-title">{o.product_title}</span>
+                      <span className="profile-order-title">
+                        {o.product_title}
+                      </span>
                       <span className="profile-order-meta">
                         {o.price_rub} ₽ · {getOrderStatusLabel(o.status)}
                         {o.paid_at && <> · {formatOrderDate(o.paid_at)}</>}
@@ -463,7 +510,9 @@ export default function Profile({ onBack, onNavigate }) {
               className="btn btn-outline profile-recalc-btn"
               onClick={() => {
                 setShowRecalcForm(true);
-                setRecalcDate(user?.dateOfBirth ? formatDateForInput(user.dateOfBirth) : "");
+                setRecalcDate(
+                  user?.dateOfBirth ? formatDateForInput(user.dateOfBirth) : ""
+                );
                 setRecalcPlace(user?.placeOfBirth || "");
                 setRecalcTime(user?.timeOfBirth || "");
                 setRecalcTimeUnknown(false);
@@ -484,7 +533,11 @@ export default function Profile({ onBack, onNavigate }) {
                 className="btn btn-outline profile-recalc-btn"
                 onClick={() => {
                   setShowRecalcForm(true);
-                  setRecalcDate(user?.dateOfBirth ? formatDateForInput(user.dateOfBirth) : "");
+                  setRecalcDate(
+                    user?.dateOfBirth
+                      ? formatDateForInput(user.dateOfBirth)
+                      : ""
+                  );
                   setRecalcPlace(user?.placeOfBirth || "");
                   setRecalcTime(user?.timeOfBirth || "");
                   setRecalcTimeUnknown(false);
@@ -513,11 +566,21 @@ export default function Profile({ onBack, onNavigate }) {
                     <input
                       ref={recalcDateRef}
                       type="text"
-                      className={`profile-recalc-input review-textarea ${recalcFieldErrors.dateOfBirth ? "input-invalid" : ""}`}
-                      value={/^\d{4}-\d{2}-\d{2}$/.test(recalcDate) ? formatDateForInput(recalcDate) : recalcDate}
+                      className={`profile-recalc-input review-textarea ${
+                        recalcFieldErrors.dateOfBirth ? "input-invalid" : ""
+                      }`}
+                      value={
+                        /^\d{4}-\d{2}-\d{2}$/.test(recalcDate)
+                          ? formatDateForInput(recalcDate)
+                          : recalcDate
+                      }
                       onChange={(e) => {
                         setRecalcDate(formatDateInput(e.target.value));
-                        if (recalcFieldErrors.dateOfBirth) setRecalcFieldErrors((p) => ({ ...p, dateOfBirth: false }));
+                        if (recalcFieldErrors.dateOfBirth)
+                          setRecalcFieldErrors((p) => ({
+                            ...p,
+                            dateOfBirth: false,
+                          }));
                       }}
                       placeholder="ДД.ММ.ГГГГ (например 16.02.1992)"
                     />
@@ -528,11 +591,17 @@ export default function Profile({ onBack, onNavigate }) {
                       <input
                         ref={recalcTimeRef}
                         type="text"
-                        className={`profile-recalc-input review-textarea ${recalcFieldErrors.timeOfBirth ? "input-invalid" : ""}`}
+                        className={`profile-recalc-input review-textarea ${
+                          recalcFieldErrors.timeOfBirth ? "input-invalid" : ""
+                        }`}
                         value={recalcTime}
                         onChange={(e) => {
                           setRecalcTime(formatTimeInput(e.target.value));
-                          if (recalcFieldErrors.timeOfBirth) setRecalcFieldErrors((p) => ({ ...p, timeOfBirth: false }));
+                          if (recalcFieldErrors.timeOfBirth)
+                            setRecalcFieldErrors((p) => ({
+                              ...p,
+                              timeOfBirth: false,
+                            }));
                         }}
                         placeholder="ЧЧ:ММ (например 16:30)"
                       />
@@ -547,7 +616,10 @@ export default function Profile({ onBack, onNavigate }) {
                           setRecalcTimeUnknown(checked);
                           if (checked) {
                             setRecalcTime("");
-                            setRecalcFieldErrors((p) => ({ ...p, timeOfBirth: false }));
+                            setRecalcFieldErrors((p) => ({
+                              ...p,
+                              timeOfBirth: false,
+                            }));
                           }
                         }}
                       />
@@ -561,11 +633,17 @@ export default function Profile({ onBack, onNavigate }) {
                     <input
                       ref={recalcPlaceRef}
                       type="text"
-                      className={`profile-recalc-input review-textarea ${recalcFieldErrors.placeOfBirth ? "input-invalid" : ""}`}
+                      className={`profile-recalc-input review-textarea ${
+                        recalcFieldErrors.placeOfBirth ? "input-invalid" : ""
+                      }`}
                       value={recalcPlace}
                       onChange={(e) => {
                         setRecalcPlace(filterLettersInput(e.target.value));
-                        if (recalcFieldErrors.placeOfBirth) setRecalcFieldErrors((p) => ({ ...p, placeOfBirth: false }));
+                        if (recalcFieldErrors.placeOfBirth)
+                          setRecalcFieldErrors((p) => ({
+                            ...p,
+                            placeOfBirth: false,
+                          }));
                       }}
                       placeholder="Например: Москва"
                     />

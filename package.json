@@ -7,6 +7,7 @@
   "scripts": {
     "start": "node arkana_women_bot.js",
     "dev": "node --watch arkana_women_bot.js",
+    "dev:api": "node dev-api.js",
     "webapp": "cd webapp && npm run dev",
     "serve:webapp": "node server-webapp.js",
     "lint": "eslint ."
