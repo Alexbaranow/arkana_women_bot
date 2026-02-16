@@ -16,8 +16,8 @@ function interpolation(value, min, max, newMin, newMax) {
 
 function calculateProps(index, amount, size) {
   const coeff = interpolation(index, 0, amount - 1, -1, 1);
-  const spreadX = size * 0.42;
-  const depthZ = size * 0.12;
+  const spreadX = size * 1.7;
+  const depthZ = size * 0.15;
   return {
     pos: {
       x: coeff * spreadX,
@@ -111,7 +111,7 @@ export default function TarotShuffleLoader({
     };
   }, [size, isCompact]);
 
-  const cardWidth = Math.max(10, size * 0.18);
+  const cardWidth = Math.max(10, size * 0.54);
   const cardHeight = cardWidth * (16 / 9);
   const cardImages = DEBUG_TAROT_CARD_IMAGES;
 

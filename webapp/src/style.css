@@ -161,6 +161,7 @@ h1 {
 /* Расклад Таро: 3D веер с тасовкой (TarotController + TarotCard) */
 .tarot-shuffle-loader {
   color: var(--color-primary, #7c3aed);
+  background: transparent;
 }
 .tarot-shuffle-loader__scene {
   transform-style: preserve-3d;
@@ -179,8 +180,8 @@ h1 {
   box-shadow: 0 4px 12px rgba(139, 122, 184, 0.25);
 }
 .tarot-shuffle-loader__card-back {
-  /* Фон подставляется через inline style (url карты из ассетов) */
-  background-color: var(--color-primary-soft, #b8a9d4);
+  /* Фон — только изображение карты, без заливки */
+  background-color: transparent;
 }
 .tarot-shuffle-loader__card-front {
   transform: rotateY(180deg);
@@ -604,6 +605,13 @@ h1 {
   margin-top: 12px;
   font-size: 14px;
   color: #c0392b;
+}
+
+.free-tarot-submit--loading {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  cursor: default;
 }
 
 /* Подсветка невалидного поля (онбординг и личный кабинет) — приглушённый красный */

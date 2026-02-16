@@ -16,8 +16,13 @@ import { parseJsonSafe } from "../utils/json";
 import { getApiUrl } from "../config/api";
 import { ScreenId } from "../constants/screens";
 
+/** Защита от двойного запуска эффекта в React Strict Mode (модуль переживает ремаунт) */
+let lastEffectRunAt = 0;
+const EFFECT_DEBOUNCE_MS = 3000;
+
 export default function CardDayRequest({ onBack, onNavigate }) {
   const {
+    cardOfTheDay: contextCard,
     setRequesting,
     setJustCardDayDone,
     setHasCardOfTheDay,
@@ -25,12 +30,24 @@ export default function CardDayRequest({ onBack, onNavigate }) {
   } = useCardDayRequest();
   const { startCalculation, isCalculating, natalResult } = useNatalChart();
   const user = getOnboardingUser();
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!contextCard?.text);
   const [error, setError] = useState(null);
-  const [card, setCard] = useState(null); // { text, expiresAt, dateKey }
+  const [card, setCard] = useState(() => contextCard ?? null);
   const [requestingNatal, setRequestingNatal] = useState(false);
 
   useEffect(() => {
+    // Карта уже в контексте — показываем без запроса
+    if (contextCard?.text) {
+      setCard(contextCard);
+      setHasCardOfTheDay(true);
+      setLoading(false);
+      return;
+    }
+
+    const now = Date.now();
+    if (now - lastEffectRunAt < EFFECT_DEBOUNCE_MS) return;
+    lastEffectRunAt = now;
+
     let cancelled = false;
 
     const run = async () => {
@@ -98,7 +115,7 @@ export default function CardDayRequest({ onBack, onNavigate }) {
           return;
         }
 
-        // 2. Карты нет — проверяем натальные данные
+        // 2. Карты нет — для генерации нужны натальные данные (асцендент/натальная карта из личного кабинета)
         await new Promise((r) => setTimeout(r, 50));
         if (cancelled) return;
 
@@ -198,6 +215,7 @@ export default function CardDayRequest({ onBack, onNavigate }) {
       setRequesting(false);
     };
   }, [
+    contextCard,
     user?.name,
     user?.dateOfBirth,
     user?.placeOfBirth,
@@ -229,7 +247,7 @@ export default function CardDayRequest({ onBack, onNavigate }) {
           <>
             <div className="card-day-request-spinner">
               <TarotShuffleLoader
-                size={72}
+                size={180}
                 aria-label="Загрузка"
               />
             </div>
@@ -239,7 +257,7 @@ export default function CardDayRequest({ onBack, onNavigate }) {
             >
               {requestingNatal
                 ? "Идёт расчёт асцендента и натальной карты…"
-                : "Можно не ждать загрузки — карта дня появится в личном кабинете. Действует до 24:00."}
+                : "Получаем карту дня… Действует до 24:00 (по Москве)."}
             </p>
           </>
         )}

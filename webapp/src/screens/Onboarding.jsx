@@ -74,6 +74,9 @@ function parseUserTimeInput(str) {
 
 const STORAGE_KEY = "arkana_user";
 
+const MIN_NAME_LENGTH = 2;
+const MIN_PLACE_LETTERS = 3; // минимум букв (игнорируя пробелы)
+
 export function saveOnboardingUser(
   name,
   dateOfBirth,
@@ -164,20 +167,33 @@ export default function Onboarding({ onBack, onComplete, next }) {
 
     const errors = {};
     if (!trimmedName) errors.name = true;
+    else if (trimmedName.length < MIN_NAME_LENGTH)
+      errors.name = true;
     if (!savedDate || !date || Number.isNaN(date.getTime()) || date > new Date()) {
       errors.dateOfBirth = true;
     }
     if (!timeUnknown && timeOfBirth.trim() && !parseUserTimeInput(timeOfBirth)) {
       errors.timeOfBirth = true;
     }
-    if (!trimmedPlace) errors.placeOfBirth = true;
+    const placeLetters = (trimmedPlace.match(/\p{L}/gu) || []).length;
+    if (!trimmedPlace || placeLetters < MIN_PLACE_LETTERS) errors.placeOfBirth = true;
 
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
-      if (errors.name) setError("Введи, пожалуйста, как к тебе обращаться");
+      if (errors.name)
+        setError(
+          trimmedName.length > 0 && trimmedName.length < MIN_NAME_LENGTH
+            ? "Имя должно быть минимум 2 символа"
+            : "Введи, пожалуйста, как к тебе обращаться"
+        );
       else if (errors.dateOfBirth) setError("Укажи дату рождения (например 16.02.1992)");
       else if (errors.timeOfBirth) setError("Время укажи в формате ЧЧ:ММ (например 16:30)");
-      else setError("Укажи место рождения (город или страна)");
+      else if (errors.placeOfBirth)
+        setError(
+          placeLetters > 0 && placeLetters < MIN_PLACE_LETTERS
+            ? "Место рождения: минимум 3 буквы (город или страна)"
+            : "Укажи место рождения (город или страна)"
+        );
       return;
     }
 

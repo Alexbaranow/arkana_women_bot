@@ -59,7 +59,7 @@ export function getDisplayNatal(natalResult) {
   return null;
 }
 
-const STORAGE_NATAL_KEY = "arkana_natal_result";
+export const STORAGE_NATAL_KEY = "arkana_natal_result";
 
 /** Читает сырые натальные данные из localStorage (ключ как в NatalChartContext) */
 export function getNatalResultFromStorage() {

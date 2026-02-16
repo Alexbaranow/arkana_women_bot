@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { getOnboardingUser } from "./Onboarding";
-import { getInitData } from "../utils/telegram";
+import { getInitData, isLocalDev } from "../utils/telegram";
 import { getApiUrl } from "../config/api";
+import TarotShuffleLoader from "../components/TarotShuffleLoader";
 
 export default function FreeTarot({ onBack }) {
   const user = getOnboardingUser();
@@ -41,7 +42,9 @@ export default function FreeTarot({ onBack }) {
       return;
     }
 
-    const inTelegram = typeof window !== "undefined" && window.Telegram?.WebApp;
+    // На localhost скрипт Telegram создаёт WebApp, но initData пустой — не считаем это «в Telegram»
+    const inTelegram =
+      typeof window !== "undefined" && window.Telegram?.WebApp && !isLocalDev();
     let currentInitData = getInitData();
 
     // Только внутри Telegram требуем initData (он может подставиться с задержкой — даём пару попыток)
@@ -86,15 +89,24 @@ export default function FreeTarot({ onBack }) {
             "Сессия не распознана. Закрой и снова открой приложение из бота (🔮 Открыть приложение), затем отправь вопрос."
           );
         } else {
-          setError(data.error || "Что-то пошло не так");
+          const msg = data.error || "Что-то пошло не так";
+          setError(
+            data.serverError ? `${msg} (сервер: ${data.serverError})` : msg
+          );
         }
         return;
       }
       setAnswer(data.answer);
       setQuestion("");
     } catch (err) {
+      const isNetwork =
+        err?.message?.includes("Failed to fetch") ||
+        err?.message?.includes("Load failed") ||
+        err?.message?.includes("NetworkError");
       setError(
-        "Не удалось отправить вопрос. Проверь интернет и попробуй снова."
+        isNetwork
+          ? "Не удалось подключиться к API. В отдельном терминале запусти: npm run dev:api"
+          : "Не удалось отправить вопрос. Проверь интернет и попробуй снова."
       );
     } finally {
       setLoading(false);
@@ -200,10 +212,14 @@ export default function FreeTarot({ onBack }) {
           </div>
           <button
             type="submit"
-            className="btn btn-primary"
+            className={`btn btn-primary ${loading ? "free-tarot-submit--loading" : ""}`}
             disabled={loading || question.trim().length < 5}
           >
-            {loading ? "🔮 Думаю над вопросом..." : "Отправить вопрос ✨"}
+            {loading ? (
+              <TarotShuffleLoader size={48} aria-label="Загрузка" />
+            ) : (
+              "Отправить вопрос ✨"
+            )}
           </button>
         </form>
       </main>

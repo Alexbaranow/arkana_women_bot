@@ -25,7 +25,16 @@ import { createApiServer } from "./api.js";
 const API_PORT = Number(process.env.API_PORT) || 3001;
 
 console.log("📡 Запуск только API для разработки (без бота)...");
-createApiServer(API_PORT, null);
+const server = createApiServer(API_PORT, null);
+server.on("error", (err) => {
+  if (err?.code === "EADDRINUSE") {
+    console.error(
+      `\n❌ Порт ${API_PORT} занят. Останови другой процесс:\n   lsof -i :${API_PORT}\n   kill $(lsof -i :${API_PORT} -t)\n`
+    );
+    process.exit(1);
+  }
+  throw err;
+});
 console.log(
   "   Открой веб-приложение: npm run webapp, затем http://localhost:3000"
 );

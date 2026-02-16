@@ -52,8 +52,11 @@ function sendAIError(res, err, defaultMessage) {
   if (isRateLimitError(err)) {
     return res.status(429).json({ error: RATE_LIMIT_MESSAGE });
   }
-  console.error("API AI error:", err?.message || err);
-  return res.status(500).json({ error: err?.message || defaultMessage });
+  const msg = err?.message || defaultMessage;
+  console.error("API AI error:", msg);
+  const payload = { error: msg };
+  if (isDev) payload.serverError = String(err?.message || err);
+  return res.status(500).json(payload);
 }
 
 /** Извлечь Telegram user id из initData (для оплаты и заказов).
@@ -126,11 +129,33 @@ app.post("/api/free-question", async (req, res) => {
   }
 });
 
+const MIN_PLACE_LETTERS = 3;
+const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
 function validateNatalRequest(req, res) {
   const { initData, dateOfBirth, placeOfBirth, timeOfBirth } = req.body || {};
 
-  if (!dateOfBirth || !placeOfBirth) {
+  const trimmedDate = dateOfBirth != null ? String(dateOfBirth).trim() : "";
+  const trimmedPlace = placeOfBirth != null ? String(placeOfBirth).trim() : "";
+
+  if (!trimmedDate || !trimmedPlace) {
     res.status(400).json({ error: "Нужны dateOfBirth и placeOfBirth" });
+    return null;
+  }
+  if (!DATE_REGEX.test(trimmedDate)) {
+    res.status(400).json({ error: "Дата должна быть в формате ГГГГ-ММ-ДД" });
+    return null;
+  }
+  const date = new Date(trimmedDate);
+  if (Number.isNaN(date.getTime()) || date > new Date()) {
+    res.status(400).json({ error: "Некорректная дата рождения" });
+    return null;
+  }
+  const placeLetters = (trimmedPlace.match(/\p{L}/gu) || []).length;
+  if (placeLetters < MIN_PLACE_LETTERS) {
+    res.status(400).json({
+      error: "Место рождения: минимум 3 буквы (город или страна)",
+    });
     return null;
   }
   // DEV: в режиме разработки не проверяем initData — можно вызывать из браузера (docs/DEV.md)
@@ -152,8 +177,8 @@ function validateNatalRequest(req, res) {
     }
   }
   return {
-    dateOfBirth: String(dateOfBirth).trim(),
-    placeOfBirth: String(placeOfBirth).trim(),
+    dateOfBirth: trimmedDate,
+    placeOfBirth: trimmedPlace,
     timeOfBirth:
       timeOfBirth != null && String(timeOfBirth).trim()
         ? String(timeOfBirth).trim()

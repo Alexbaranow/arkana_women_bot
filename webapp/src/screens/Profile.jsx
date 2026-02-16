@@ -15,6 +15,10 @@ import {
 } from "../constants/tarotCards";
 import { getApiUrl } from "../config/api";
 
+/** Защита от двойного запроса карты дня при перемонтировании (React Strict Mode) */
+let lastProfileCardDayGetAt = 0;
+const PROFILE_GET_DEBOUNCE_MS = 2000;
+
 /** В поле даты — только цифры, точки подставляются автоматически (ДД.ММ.ГГГГ) */
 function formatDateInput(value) {
   const digits = value.replace(/\D/g, "").slice(0, 8);
@@ -178,6 +182,9 @@ export default function Profile({ onBack, onNavigate }) {
   }, [setCardOfTheDay]);
 
   useEffect(() => {
+    const now = Date.now();
+    if (now - lastProfileCardDayGetAt < PROFILE_GET_DEBOUNCE_MS) return;
+    lastProfileCardDayGetAt = now;
     fetchCardOfTheDay();
   }, [fetchCardOfTheDay]);
 
@@ -218,14 +225,20 @@ export default function Profile({ onBack, onNavigate }) {
     ) {
       errors.timeOfBirth = true;
     }
-    if (!placeOfBirth) errors.placeOfBirth = true;
+    const placeLetters = (placeOfBirth.match(/\p{L}/gu) || []).length;
+    if (!placeOfBirth || placeLetters < 3) errors.placeOfBirth = true;
     if (Object.keys(errors).length > 0) {
       setRecalcFieldErrors(errors);
       if (errors.dateOfBirth)
         setRecalcError("Укажи дату рождения (например 16.02.1992)");
       else if (errors.timeOfBirth)
         setRecalcError("Время укажи в формате ЧЧ:ММ (например 16:30)");
-      else setRecalcError("Укажи место рождения (город или страна)");
+      else if (errors.placeOfBirth)
+        setRecalcError(
+          placeLetters > 0 && placeLetters < 3
+            ? "Место рождения: минимум 3 буквы (город или страна)"
+            : "Укажи место рождения (город или страна)"
+        );
       return;
     }
     setRecalcFieldErrors({});

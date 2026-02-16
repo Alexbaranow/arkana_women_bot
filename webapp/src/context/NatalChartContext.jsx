@@ -1,8 +1,12 @@
 import { createContext, useContext, useState, useCallback } from "react";
-import { getNatalResultFromStorage } from "../utils/natal";
+import { getNatalResultFromStorage, STORAGE_NATAL_KEY } from "../utils/natal";
 import { getApiUrl } from "../config/api";
 
 const NatalChartContext = createContext(null);
+
+/** Защита от двойного вызова при перемонтировании в React Strict Mode (провайдер тоже ремаунтится, ref сбрасывается) */
+let lastCalculationStartAt = 0;
+const START_CALCULATION_DEBOUNCE_MS = 5000;
 
 export function NatalChartProvider({ children }) {
   const [isCalculating, setIsCalculating] = useState(false);
@@ -12,6 +16,11 @@ export function NatalChartProvider({ children }) {
   const startCalculation = useCallback(
     async (initData, { dateOfBirth, placeOfBirth, timeOfBirth }) => {
       if (!dateOfBirth || !placeOfBirth) return;
+      const now = Date.now();
+      if (now - lastCalculationStartAt < START_CALCULATION_DEBOUNCE_MS) {
+        return;
+      }
+      lastCalculationStartAt = now;
       setIsCalculating(true);
       setJustCalculated(false);
       const payload = {

@@ -104,6 +104,10 @@ const SPREADS = [
   },
 ];
 
+/** Защита от двойного запроса при перемонтировании (React Strict Mode). При разработке */
+let lastGetAt = 0;
+const GET_DEBOUNCE_MS = 2000;
+
 export default function AllSpreads({ onBack, onNavigate }) {
   const {
     isRequesting: isCardDayRequesting,
@@ -113,6 +117,10 @@ export default function AllSpreads({ onBack, onNavigate }) {
   const [expandedId, setExpandedId] = useState(null);
 
   useEffect(() => {
+    const now = Date.now();
+    if (now - lastGetAt < GET_DEBOUNCE_MS) return;
+    lastGetAt = now;
+
     const base = getApiUrl() || "";
     fetch(`${base}/api/card-of-the-day/get`, {
       method: "POST",
