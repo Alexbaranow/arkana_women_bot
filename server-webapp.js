@@ -11,7 +11,10 @@ import { config } from "dotenv";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 config({ path: join(__dirname, ".env") });
 
-console.log("[startup] BOT_TOKEN:", process.env.BOT_TOKEN ? "***задан***" : "НЕТ");
+console.log(
+  "[startup] BOT_TOKEN:",
+  process.env.BOT_TOKEN ? "***задан***" : "НЕТ"
+);
 console.log("[startup] WEBAPP_URL:", process.env.WEBAPP_URL || "(не задан)");
 
 import express from "express";
@@ -24,12 +27,25 @@ const staticDir = join(__dirname, "webapp", "dist");
 // Передаём бота в API — иначе оплата Stars недоступна
 app.set("bot", bot);
 const botAttached = !!app.get("bot");
-console.log("[startup] Бот привязан к API (Stars):", botAttached ? "да" : "нет");
+console.log(
+  "[startup] Бот привязан к API (Stars):",
+  botAttached ? "да" : "нет"
+);
 
 // Проверка живости для nginx / мониторинга (X-Stars-Available: 1 если бот привязан)
 app.get("/health", (req, res) => {
   res.setHeader("X-Stars-Available", app.get("bot") ? "1" : "0");
   res.status(200).send("ok");
+});
+
+// Заголовки для встраивания Mini App в Telegram WebView/iframe
+// Без них Telegram Web (web.telegram.org) и некоторые клиенты могут блокировать открытие
+app.use((req, res, next) => {
+  res.setHeader(
+    "Content-Security-Policy",
+    "frame-ancestors https://web.telegram.org https://web.telegram.kz https://web.telegram.a"
+  );
+  next();
 });
 
 // Статика веб-приложения (собранный билд)
