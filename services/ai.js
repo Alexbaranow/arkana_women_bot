@@ -1,20 +1,36 @@
 import OpenAI from "openai";
 
+const BOTHUB_BASE_URL = "https://bothub.chat/api/v2/openai/v1";
+const BOTHUB_DEFAULT_MODEL = "grok-4.1-fast";
+
 let openaiClient = null;
 
 function getOpenAI() {
   if (!openaiClient) {
-    if (!process.env.OPENAI_API_KEY) {
-      throw new Error("OPENAI_API_KEY не задан в .env");
+    const apiKey = process.env.BOTHUB_API_KEY || process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new Error("OPENAI_API_KEY или BOTHUB_API_KEY не задан в .env");
     }
-    const options = { apiKey: process.env.OPENAI_API_KEY };
-    // Прокси
-    if (process.env.OPENAI_BASE_URL) {
+    const options = { apiKey };
+
+    if (process.env.BOTHUB_API_KEY) {
+      options.baseURL = BOTHUB_BASE_URL;
+    } else if (process.env.OPENAI_BASE_URL) {
       options.baseURL = process.env.OPENAI_BASE_URL.replace(/\/$/, "");
     }
+
     openaiClient = new OpenAI(options);
   }
   return openaiClient;
+}
+
+/** Дефолтная модель: Grok 4.1 Fast для BotHub, иначе из env или gpt-4o-mini */
+function getDefaultModel() {
+  if (process.env.OPENAI_MODEL) return process.env.OPENAI_MODEL;
+  if (process.env.BOTHUB_API_KEY) return BOTHUB_DEFAULT_MODEL;
+  const base = process.env.OPENAI_BASE_URL || "";
+  if (base.includes("bothub.chat")) return BOTHUB_DEFAULT_MODEL;
+  return "gpt-4o-mini";
 }
 
 const SYSTEM_PROMPT = `Ты — мудрый и добрый помощник в стиле таро и интуитивных практик. Отвечай кратко (2–4 абзаца), по-русски, тёплым и поддерживающим тоном. Не обещай точных предсказаний, но давай вдохновляющие подсказки и размышления. Не используй списки и буллеты, пиши сплошным текстом.`;
@@ -26,8 +42,7 @@ const SYSTEM_PROMPT = `Ты — мудрый и добрый помощник в
  */
 export async function getAnswer(userQuestion) {
   const openai = getOpenAI();
-  // Модель: по умолчанию OpenAI. Для Open Router: tngtech/deepseek-r1t2-chimera:free и др.
-  const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
+  const model = getDefaultModel();
 
   const completion = await openai.chat.completions.create({
     model,
@@ -71,7 +86,7 @@ export async function fetchAscendant(
   retry = false
 ) {
   const openai = getOpenAI();
-  const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
+  const model = getDefaultModel();
   const timePart = timeOfBirth ? ` Время рождения: ${timeOfBirth}.` : "";
   const completion = await openai.chat.completions.create({
     model,
@@ -138,7 +153,7 @@ export async function fetchNatalChart(
   retry = false
 ) {
   const openai = getOpenAI();
-  const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
+  const model = getDefaultModel();
   const timePart = timeOfBirth ? ` Время рождения: ${timeOfBirth}.` : "";
   const completion = await openai.chat.completions.create({
     model,
@@ -205,7 +220,7 @@ const CARD_OF_THE_DAY_SYSTEM = `Ты — мудрый таролог и инту
  */
 export async function getCardOfTheDayContent(opts, retry = false) {
   const openai = getOpenAI();
-  const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
+  const model = getDefaultModel();
   const { userName, ascendant, natalChart, tarotCardName } = opts;
 
   const parts = [];
@@ -214,9 +229,7 @@ export async function getCardOfTheDayContent(opts, retry = false) {
   }
   if (ascendant?.sign || ascendant?.description) {
     const desc = String(ascendant.description || "").slice(0, 500);
-    parts.push(
-      `Асцендент: ${ascendant.sign || ""} — ${desc}.`
-    );
+    parts.push(`Асцендент: ${ascendant.sign || ""} — ${desc}.`);
   }
   if (natalChart && String(natalChart).trim()) {
     const excerpt =
@@ -227,7 +240,9 @@ export async function getCardOfTheDayContent(opts, retry = false) {
   }
   if (tarotCardName && String(tarotCardName).trim()) {
     parts.push(
-      `Ключевая карта Таро по натальной карте: ${String(tarotCardName).trim()}. Увяжи её энергию с темой дня.`
+      `Ключевая карта Таро по натальной карте: ${String(
+        tarotCardName
+      ).trim()}. Увяжи её энергию с темой дня.`
     );
   }
   const userContext =

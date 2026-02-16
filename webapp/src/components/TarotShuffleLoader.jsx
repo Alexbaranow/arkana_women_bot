@@ -1,8 +1,10 @@
 /**
  * Расклад Таро (по сценарию TarotController + TarotCard):
  * веер карт с 3D, интерполяцией и периодической перетасовкой слотов.
+ * Компактный режим (size <= 36): одна карта с плавной пульсацией, без тасовки.
  */
 import { useEffect, useRef } from "react";
+import { DEBUG_TAROT_CARD_IMAGES } from "../constants/tarotCards";
 
 const CARD_COUNT = 5;
 const LERP = 0.1;
@@ -42,7 +44,9 @@ export default function TarotShuffleLoader({
   size = 72,
   className = "",
   "aria-label": ariaLabel,
+  compact,
 }) {
+  const isCompact = compact ?? size <= 36;
   const containerRef = useRef(null);
   const cardRefs = useRef([]);
   const stateRef = useRef({
@@ -51,6 +55,7 @@ export default function TarotShuffleLoader({
   });
 
   useEffect(() => {
+    if (isCompact) return;
     const state = stateRef.current;
     const amount = CARD_COUNT;
 
@@ -104,10 +109,38 @@ export default function TarotShuffleLoader({
       cancelAnimationFrame(rafId);
       clearInterval(shuffleInterval);
     };
-  }, [size]);
+  }, [size, isCompact]);
 
   const cardWidth = Math.max(10, size * 0.18);
   const cardHeight = cardWidth * (16 / 9);
+  const cardImages = DEBUG_TAROT_CARD_IMAGES;
+
+  if (isCompact) {
+    const cardImg = cardImages[0];
+    return (
+      <span
+        className={`tarot-shuffle-loader tarot-shuffle-loader--compact ${className}`.trim()}
+        role="status"
+        aria-label={ariaLabel || "Загрузка"}
+        style={{
+          width: size,
+          height: size,
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <div
+          className="tarot-shuffle-loader__card tarot-shuffle-loader__card--compact"
+          style={{
+            width: cardWidth,
+            height: cardHeight,
+            backgroundImage: cardImg ? `url(${cardImg})` : undefined,
+          }}
+        />
+      </span>
+    );
+  }
 
   return (
     <span
@@ -152,7 +185,12 @@ export default function TarotShuffleLoader({
               backfaceVisibility: "hidden",
             }}
           >
-            <div className="tarot-shuffle-loader__card-back" />
+            <div
+              className="tarot-shuffle-loader__card-back"
+              style={{
+                backgroundImage: `url(${cardImages[i % cardImages.length]})`,
+              }}
+            />
           </div>
         ))}
       </div>

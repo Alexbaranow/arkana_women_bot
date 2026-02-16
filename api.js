@@ -478,9 +478,9 @@ export function createApiServer(
       "⚠️ BOT_TOKEN не задан — запросы карты дня, оплаты и заказов будут возвращать 500."
     );
   }
-  if (!process.env.OPENAI_API_KEY) {
+  if (!process.env.OPENAI_API_KEY && !process.env.BOTHUB_API_KEY) {
     console.warn(
-      "⚠️ OPENAI_API_KEY не задан — карта дня, асцендент и натальная карта будут возвращать 500."
+      "⚠️ OPENAI_API_KEY или BOTHUB_API_KEY не задан — карта дня, асцендент и натальная карта будут возвращать 500."
     );
   }
   return app.listen(port, () => {
