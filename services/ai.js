@@ -2,7 +2,8 @@ import OpenAI from "openai";
 
 const BOTHUB_BASE_URL = "https://bothub.chat/api/v2/openai/v1";
 const BOTHUB_DEFAULT_MODEL = "grok-4.1-fast";
-const BOTHUB_FALLBACK_MODEL = "gpt-4.1";
+const BOTHUB_FALLBACK_MODEL =
+  process.env.BOTHUB_FALLBACK_MODEL || "gpt-4.1";
 
 let openaiClient = null;
 
@@ -37,11 +38,41 @@ function getDefaultModel() {
 function isModelNotFoundError(err) {
   const code = err?.code ?? err?.error?.code ?? "";
   const status = err?.status ?? err?.statusCode;
+  const msg = String(err?.message ?? "");
   return (
     status === 404 ||
     String(code).toLowerCase().includes("model_not_found") ||
-    String(code).toLowerCase().includes("model not found")
+    String(code).toLowerCase().includes("model not found") ||
+    msg.toLowerCase().includes("model_not_found") ||
+    msg.includes("MODEL_NOT_FOUND")
   );
+}
+
+/**
+ * Вызов chat.completions.create с fallback при MODEL_NOT_FOUND (BotHub).
+ * При 404/model_not_found делает повторный запрос с BOTHUB_FALLBACK_MODEL и логирует.
+ */
+async function createWithModelFallback(openai, options, context = "ai") {
+  try {
+    return await openai.chat.completions.create(options);
+  } catch (err) {
+    if (isModelNotFoundError(err) && process.env.BOTHUB_API_KEY) {
+      const fallbackModel = BOTHUB_FALLBACK_MODEL;
+      console.log(
+        `[ai] ${context}: MODEL_NOT_FOUND, fallback на ${fallbackModel}`,
+        { error: err?.message, firstModel: options.model }
+      );
+      const fallbackOptions = { ...options, model: fallbackModel };
+      const completion = await openai.chat.completions.create(fallbackOptions);
+      console.log(`[ai] ${context}: fallback запрос успешен`, {
+        model: fallbackModel,
+        usage: completion?.usage,
+        choicesCount: completion?.choices?.length,
+      });
+      return completion;
+    }
+    throw err;
+  }
 }
 
 const SYSTEM_PROMPT = `Ты — мудрый и добрый помощник в стиле таро и интуитивных практик. Отвечай кратко (2–4 абзаца), по-русски, тёплым и поддерживающим тоном. Не обещай точных предсказаний, но давай вдохновляющие подсказки и размышления. Не используй списки и буллеты, пиши сплошным текстом.`;
@@ -59,26 +90,10 @@ export async function getAnswer(userQuestion) {
     { role: "user", content: userQuestion.trim() },
   ];
   const options = { model, messages, max_tokens: 500 };
-
-  try {
-    const completion = await openai.chat.completions.create(options);
-    const content = completion.choices[0]?.message?.content;
-    if (!content) throw new Error("Пустой ответ от нейросети");
-    return content.trim();
-  } catch (err) {
-    if (
-      isModelNotFoundError(err) &&
-      process.env.BOTHUB_API_KEY &&
-      model === BOTHUB_DEFAULT_MODEL
-    ) {
-      options.model = BOTHUB_FALLBACK_MODEL;
-      const completion = await openai.chat.completions.create(options);
-      const content = completion.choices[0]?.message?.content;
-      if (!content) throw new Error("Пустой ответ от нейросети");
-      return content.trim();
-    }
-    throw err;
-  }
+  const completion = await createWithModelFallback(openai, options, "free-question");
+  const content = completion.choices[0]?.message?.content;
+  if (!content) throw new Error("Пустой ответ от нейросети");
+  return content.trim();
 }
 
 const ASCENDANT_PROMPT = `Ты — астролог и специалист по Таро. По дате, времени (если указано) и месту рождения рассчитай символический асцендент. Если в запросе есть время рождения — обязательно используй его для более точного расчёта асцендента. Ответь ТОЛЬКО валидным JSON с полями: "sign" (знак асцендента, например "Стрелец"), "description" (2–4 предложения о значении асцендента в контексте Таро, связь с арканами). Без вступления, только JSON.`;
@@ -109,7 +124,7 @@ export async function fetchAscendant(
   const openai = getOpenAI();
   const model = getDefaultModel();
   const timePart = timeOfBirth ? ` Время рождения: ${timeOfBirth}.` : "";
-  const completion = await openai.chat.completions.create({
+  const options = {
     model,
     messages: [
       { role: "system", content: ASCENDANT_PROMPT },
@@ -119,7 +134,8 @@ export async function fetchAscendant(
       },
     ],
     max_tokens: 800,
-  });
+  };
+  const completion = await createWithModelFallback(openai, options, "ascendant");
   const choice = completion.choices[0];
   let content = extractTextFromChoice(choice);
   if (!content && !retry) {
@@ -176,7 +192,7 @@ export async function fetchNatalChart(
   const openai = getOpenAI();
   const model = getDefaultModel();
   const timePart = timeOfBirth ? ` Время рождения: ${timeOfBirth}.` : "";
-  const completion = await openai.chat.completions.create({
+  const options = {
     model,
     messages: [
       { role: "system", content: NATAL_CHART_PROMPT },
@@ -186,7 +202,8 @@ export async function fetchNatalChart(
       },
     ],
     max_tokens: 4096,
-  });
+  };
+  const completion = await createWithModelFallback(openai, options, "natal-chart");
   const choice = completion.choices[0];
   let content = extractTextFromChoice(choice);
   if (!content && !retry) {
@@ -273,14 +290,15 @@ export async function getCardOfTheDayContent(opts, retry = false) {
 
   const userMessage = `Сегодняшний день. Контекст человека:\n\n${userContext}\n\nДай персональную карту дня: одна карта Таро как тема и совет на сегодня.`;
 
-  const completion = await openai.chat.completions.create({
+  const options = {
     model,
     messages: [
       { role: "system", content: CARD_OF_THE_DAY_SYSTEM },
       { role: "user", content: userMessage },
     ],
     max_tokens: 1200,
-  });
+  };
+  const completion = await createWithModelFallback(openai, options, "card-of-the-day");
 
   const choice = completion.choices[0];
   const content = extractTextFromChoice(choice);
