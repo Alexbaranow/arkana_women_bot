@@ -13,6 +13,7 @@ export default function FreeTarot({ onBack }) {
   const [answer, setAnswer] = useState(null);
   const [error, setError] = useState(null);
   const [initData, setInitData] = useState(getInitData);
+  const [responseLog, setResponseLog] = useState(null);
 
   // initData может появиться после инъекции Telegram (не сразу при загрузке)
   useEffect(() => {
@@ -71,6 +72,7 @@ export default function FreeTarot({ onBack }) {
     setError(null);
     setLoading(true);
     setAnswer(null);
+    setResponseLog(null);
 
     try {
       const res = await fetch(`${getApiUrl()}/api/free-question`, {
@@ -82,6 +84,14 @@ export default function FreeTarot({ onBack }) {
         }),
       });
       const data = await res.json().catch(() => ({}));
+
+      setResponseLog({
+        status: res.status,
+        ok: res.ok,
+        url: `${getApiUrl()}/api/free-question`,
+        body: data,
+        bodyRaw: JSON.stringify(data, null, 2),
+      });
 
       if (!res.ok) {
         if (res.status === 401) {
@@ -99,6 +109,10 @@ export default function FreeTarot({ onBack }) {
       setAnswer(data.answer);
       setQuestion("");
     } catch (err) {
+      setResponseLog({
+        error: err?.message || String(err),
+        stack: err?.stack,
+      });
       const isNetwork =
         err?.message?.includes("Failed to fetch") ||
         err?.message?.includes("Load failed") ||
@@ -221,6 +235,13 @@ export default function FreeTarot({ onBack }) {
               "Отправить вопрос ✨"
             )}
           </button>
+          {responseLog && (
+            <pre className="free-tarot-response-log" aria-live="polite">
+              {responseLog.bodyRaw
+                ? `[${responseLog.status}] ${responseLog.ok ? "OK" : "ERR"}\n${responseLog.bodyRaw}`
+                : `[error] ${responseLog.error || ""}${responseLog.stack ? `\n${responseLog.stack}` : ""}`}
+            </pre>
+          )}
         </form>
       </main>
     </div>

@@ -2,6 +2,7 @@ import OpenAI from "openai";
 
 const BOTHUB_BASE_URL = "https://bothub.chat/api/v2/openai/v1";
 const BOTHUB_DEFAULT_MODEL = "grok-4.1-fast";
+const BOTHUB_FALLBACK_MODEL = "gpt-4.1";
 
 let openaiClient = null;
 
@@ -33,6 +34,16 @@ function getDefaultModel() {
   return "gpt-4o-mini";
 }
 
+function isModelNotFoundError(err) {
+  const code = err?.code ?? err?.error?.code ?? "";
+  const status = err?.status ?? err?.statusCode;
+  return (
+    status === 404 ||
+    String(code).toLowerCase().includes("model_not_found") ||
+    String(code).toLowerCase().includes("model not found")
+  );
+}
+
 const SYSTEM_PROMPT = `Ты — мудрый и добрый помощник в стиле таро и интуитивных практик. Отвечай кратко (2–4 абзаца), по-русски, тёплым и поддерживающим тоном. Не обещай точных предсказаний, но давай вдохновляющие подсказки и размышления. Не используй списки и буллеты, пиши сплошным текстом.`;
 
 /**
@@ -43,21 +54,31 @@ const SYSTEM_PROMPT = `Ты — мудрый и добрый помощник в
 export async function getAnswer(userQuestion) {
   const openai = getOpenAI();
   const model = getDefaultModel();
+  const messages = [
+    { role: "system", content: SYSTEM_PROMPT },
+    { role: "user", content: userQuestion.trim() },
+  ];
+  const options = { model, messages, max_tokens: 500 };
 
-  const completion = await openai.chat.completions.create({
-    model,
-    messages: [
-      { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: userQuestion.trim() },
-    ],
-    max_tokens: 500,
-  });
-
-  const content = completion.choices[0]?.message?.content;
-  if (!content) {
-    throw new Error("Пустой ответ от нейросети");
+  try {
+    const completion = await openai.chat.completions.create(options);
+    const content = completion.choices[0]?.message?.content;
+    if (!content) throw new Error("Пустой ответ от нейросети");
+    return content.trim();
+  } catch (err) {
+    if (
+      isModelNotFoundError(err) &&
+      process.env.BOTHUB_API_KEY &&
+      model === BOTHUB_DEFAULT_MODEL
+    ) {
+      options.model = BOTHUB_FALLBACK_MODEL;
+      const completion = await openai.chat.completions.create(options);
+      const content = completion.choices[0]?.message?.content;
+      if (!content) throw new Error("Пустой ответ от нейросети");
+      return content.trim();
+    }
+    throw err;
   }
-  return content.trim();
 }
 
 const ASCENDANT_PROMPT = `Ты — астролог и специалист по Таро. По дате, времени (если указано) и месту рождения рассчитай символический асцендент. Если в запросе есть время рождения — обязательно используй его для более точного расчёта асцендента. Ответь ТОЛЬКО валидным JSON с полями: "sign" (знак асцендента, например "Стрелец"), "description" (2–4 предложения о значении асцендента в контексте Таро, связь с арканами). Без вступления, только JSON.`;

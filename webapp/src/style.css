@@ -614,6 +614,21 @@ h1 {
   cursor: default;
 }
 
+.free-tarot-response-log {
+  margin-top: 12px;
+  padding: 12px;
+  font-size: 11px;
+  font-family: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, monospace;
+  color: var(--color-text-muted);
+  background: rgba(139, 122, 184, 0.08);
+  border: 1px solid rgba(139, 122, 184, 0.15);
+  border-radius: var(--radius-sm);
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
 /* Подсветка невалидного поля (онбординг и личный кабинет) — приглушённый красный */
 input.input-invalid,
 .review-textarea.input-invalid {
