@@ -173,7 +173,8 @@ h1 {
 .tarot-shuffle-loader__card-front {
   position: absolute;
   inset: 0;
-  border-radius: 0;
+  border-radius: 6px;
+  border: 1px solid rgba(139, 122, 184, 0.4);
   backface-visibility: hidden;
   background-size: cover;
   background-position: center;
@@ -195,7 +196,8 @@ h1 {
 
 /* Компактный лоадер (правый верхний угол): одна карта, плавная пульсация без тасовки */
 .tarot-shuffle-loader--compact .tarot-shuffle-loader__card--compact {
-  border-radius: 0;
+  border-radius: 8px;
+  border: 1px solid rgba(139, 122, 184, 0.4);
   background-size: cover;
   background-position: center;
   box-shadow: 0 2px 8px rgba(139, 122, 184, 0.2);

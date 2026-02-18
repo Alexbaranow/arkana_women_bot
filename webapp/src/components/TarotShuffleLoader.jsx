@@ -7,8 +7,8 @@ import { useEffect, useRef } from "react";
 import { DEBUG_TAROT_CARD_IMAGES } from "../constants/tarotCards";
 
 const CARD_COUNT = 5;
-const LERP = 0.1;
-const SHUFFLE_INTERVAL_MS = 2800;
+const LERP = 0.04;
+const SHUFFLE_INTERVAL_MS = 3600;
 
 function interpolation(value, min, max, newMin, newMax) {
   return ((value - min) / (max - min)) * (newMax - newMin) + newMin;
