@@ -24,7 +24,7 @@ function getOpenAI() {
   return openaiClient;
 }
 
-/** Дефолтная модель: Grok 4.1 Fast для BotHub, иначе из env или gpt-4o-mini */
+/** Дефолтная модель: grok-4.1-fast для BotHub, иначе из env или gpt-4o-mini */
 function getDefaultModel() {
   if (process.env.OPENAI_MODEL) return process.env.OPENAI_MODEL;
   if (process.env.BOTHUB_API_KEY) return BOTHUB_DEFAULT_MODEL;
