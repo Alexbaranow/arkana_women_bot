@@ -133,9 +133,10 @@ export function updateUserBalance(telegramId, amount) {
   if (user) user.balance = (user.balance || 0) + amount;
 }
 
-// === Бесплатный вопрос (каждые 3 дня) ===
+// === Бесплатный вопрос ===
 
-const FREE_QUESTION_DAYS = 3;
+/** Пауза между бесплатными вопросами в днях. 0 — лимита нет (отключён временно); чтобы вернуть, задай FREE_QUESTION_DAYS=3. */
+const FREE_QUESTION_DAYS = Number(process.env.FREE_QUESTION_DAYS ?? 0);
 
 export function hasFreeQuestion(telegramId) {
   const user = getUser(telegramId);
