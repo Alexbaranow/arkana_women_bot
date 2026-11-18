@@ -1,9 +1,9 @@
 import OpenAI from "openai";
 
 const BOTHUB_BASE_URL = "https://bothub.chat/api/v2/openai/v1";
-const BOTHUB_DEFAULT_MODEL = "grok-4.1-fast";
+const BOTHUB_DEFAULT_MODEL = "deepseek-v4-flash";
 const BOTHUB_FALLBACK_MODEL =
-  process.env.BOTHUB_FALLBACK_MODEL || "gpt-4.1";
+  process.env.BOTHUB_FALLBACK_MODEL || "gemini-3.8-flash";
 
 let openaiClient = null;
 
@@ -26,7 +26,7 @@ function getOpenAI() {
   return openaiClient;
 }
 
-/** Дефолтная модель: grok-4.1-fast для BotHub, иначе из env или gpt-4o-mini */
+/** Дефолтная модель: deepseek-v4-flash для BotHub, иначе из env или gpt-4o-mini */
 function getDefaultModel() {
   if (process.env.OPENAI_MODEL) return process.env.OPENAI_MODEL;
   if (process.env.BOTHUB_API_KEY) return BOTHUB_DEFAULT_MODEL;
@@ -35,12 +35,14 @@ function getDefaultModel() {
   return "gpt-4o-mini";
 }
 
-function isModelNotFoundError(err) {
+/** Модель недоступна: не найдена (404) или отключена для API (403 "is disabled"). */
+function isModelUnavailableError(err) {
   const code = err?.code ?? err?.error?.code ?? "";
   const status = err?.status ?? err?.statusCode;
   const msg = String(err?.message ?? "");
   return (
     status === 404 ||
+    (status === 403 && msg.toLowerCase().includes("disabled")) ||
     String(code).toLowerCase().includes("model_not_found") ||
     String(code).toLowerCase().includes("model not found") ||
     msg.toLowerCase().includes("model_not_found") ||
@@ -49,17 +51,22 @@ function isModelNotFoundError(err) {
 }
 
 /**
- * Вызов chat.completions.create с fallback при MODEL_NOT_FOUND (BotHub).
- * При 404/model_not_found делает повторный запрос с BOTHUB_FALLBACK_MODEL и логирует.
+ * Вызов chat.completions.create с fallback, если модель недоступна (BotHub).
+ * При 404/model_not_found/403 disabled повторяет запрос с BOTHUB_FALLBACK_MODEL и логирует.
  */
 async function createWithModelFallback(openai, options, context = "ai") {
   try {
     return await openai.chat.completions.create(options);
   } catch (err) {
-    if (isModelNotFoundError(err) && process.env.BOTHUB_API_KEY) {
-      const fallbackModel = BOTHUB_FALLBACK_MODEL;
+    const fallbackModel = BOTHUB_FALLBACK_MODEL;
+    if (
+      isModelUnavailableError(err) &&
+      process.env.BOTHUB_API_KEY &&
+      fallbackModel &&
+      fallbackModel !== options.model
+    ) {
       console.log(
-        `[ai] ${context}: MODEL_NOT_FOUND, fallback на ${fallbackModel}`,
+        `[ai] ${context}: модель недоступна, fallback на ${fallbackModel}`,
         { error: err?.message, firstModel: options.model }
       );
       const fallbackOptions = { ...options, model: fallbackModel };
