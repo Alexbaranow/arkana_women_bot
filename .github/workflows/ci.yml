@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            webapp/package-lock.json
+
+      - run: npm ci
+
+      # Тестов и линтера в проекте нет: проверяем, что серверные файлы парсятся и Mini App собирается.
+      - name: Проверить синтаксис серверных файлов
+        run: |
+          for f in server-webapp.js api.js db.js botInstance.js; do
+            node --check "$f"
+          done
+
+      - name: Собрать Mini App
+        working-directory: webapp
+        run: |
+          npm ci
+          npm run build
+
+  publish:
+    needs: check
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      # Docker не принимает заглавные буквы в теге, а владелец репозитория записан с ними.
+      - name: Собрать имя образа
+        run: echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Тег по SHA коммита: откат — это деплой предыдущего тега, а не пересборка.
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.IMAGE_NAME }}:latest
+
+  deploy:
+    needs: publish
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Выкатить на VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            cd ${{ secrets.VPS_APP_DIR }}
+            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            export IMAGE_TAG=${{ github.sha }}
+            docker compose -f docker-compose.prod.yml pull webapp
+            docker compose -f docker-compose.prod.yml up -d webapp
+            # Порт бота на хосте берём из .env сервера, по умолчанию 8082 (как в nginx).
+            HOST_PORT=$(grep -E '^HOST_PORT=' .env | tail -1 | cut -d= -f2 || true)
+            HOST_PORT=${HOST_PORT:-8082}
+            # Ждём готовности: если сервис не поднялся, шаг падает и это видно в CI.
+            for i in $(seq 1 30); do
+              if curl -fsS "http://127.0.0.1:${HOST_PORT}/health" > /dev/null; then exit 0; fi
+              sleep 2
+            done
+            echo "Сервис не ответил на /health после деплоя"
+            docker compose -f docker-compose.prod.yml logs --tail 50 webapp
+            exit 1
